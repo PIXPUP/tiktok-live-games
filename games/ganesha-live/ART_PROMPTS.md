@@ -1,0 +1,24 @@
+# Ganesha shrine background
+Tool: built-in imagegen edit.
+Saved asset: temple-bg.png.
+Input: original merit-game temple background, used as a composition reference.
+Final prompt:
+Edit the provided portrait game backdrop into a separate Ganesha shrine game background. Keep the exact portrait aspect ratio 941:1672, frontal symmetrical camera, 3D cinematic game-art realism, warm crimson-and-gold palette, two clean red pillars with small gold floral patterns and NO dragons, and the same empty central red carpet aisle. Replace the central Buddha and its altar with a magnificent respectful golden statue of Lord Ganesha: elephant head, large ears, natural curved trunk, ornate gold crown fully visible with generous headroom, four anatomically coherent arms/hands with traditional blessing gesture and small ritual objects such as lotus and sweet bowl, seated on a carved gold pedestal. Keep the deity as the upper-center focal point, seated idol occupies approximately top 10 to 45 percent of image; altar and lamps finish around 50 percent; red carpet begins around 47 percent, widens toward the bottom, leaves the central 35 percent clear. Remove all Buddhist monks from the right side and replace their seating platform with a low matching offering table holding flowers, fruit, a coconut, and modak sweets, with no people there. Keep a few adult lay worshippers wearing modest white or cream attire kneeling respectfully along ONLY the lower far left and far right sides, not in the central aisle. No Buddha statues, no monks, no other deities, no snake or dragon figures on pillars. Preserve clean sharp devotional architectural detail and realistic warm contact shadows. No lettering, no UI, no captions, no watermark. This is a production background for an interactive mobile-format livestream game; allow a clear center carpet for animated player characters.
+
+
+## Outdoor courtyard, version 2
+Tool: built-in imagegen edit. Input: temple-bg.png (indoor Ganesha shrine).
+Saved: ganesha-outdoor.png and active temple-bg.png. Preserved previous scene: ganesha-indoor.png.
+Final prompt:
+Edit this portrait Ganesha shrine game background. Change ONLY the environment from an enclosed indoor hall into a genuinely open-air outdoor shrine courtyard. Preserve the identity, face, elephant trunk, four hands, crown and overall position/scale of the central golden Ganesha statue, seated on its gold pedestal. Keep full crown visible and preserve the portrait 941:1672 composition and perspective. Remove the hall ceiling, dark enclosing walls and both giant red foreground columns completely. Behind the statue show an open pale blue sky, soft clouds, tropical green trees and flowering garden plants; a low ornate stone shrine wall and distant garden details can sit at the edges. Warm gentle late-afternoon sunlight, natural daylight, soft garden shadows, welcoming calm atmosphere. Retain a modest ornamental gold arch directly behind Ganesha, but no building ceiling or canopy above it; sky clearly visible across the upper frame and open greenery on BOTH sides. Retain the offering table at right with fruit, flowers, coconut and modak sweets. Retain kneeling adults in white/cream along only the lower far side edges, relit consistently by natural daylight, leaving the central aisle empty. Keep a red carpet of exactly the same perspective, center location and width as in the input, from the shrine steps toward bottom foreground so existing walking/bowing characters remain inside the carpet; replace surrounding indoor glossy floor with warm light stone courtyard paving. No Buddha, no monks, no dragon or snake sculptures, no extra people or deities. High-quality detailed realistic 3D game render, not a cartoon. No text, no UI, no watermarks.
+
+
+## Casual worshipper atlas — 2026-11-10
+Built-in image_gen edit of bow-original.png. Output: pilgrim-casual-atlas.png. Prompt: change only clothing to muted teal short-sleeve casual T-shirt and dark indigo denim trousers, barefoot; preserve rear-view identity, four equal-width standing/kneeling/reaching/prostrating poses, common baseline, realistic style, true transparent background; no religious robes, no text.
+
+
+## Additional casual worshippers — 2026-11-10
+Built-in image_gen edits of pilgrim-casual-atlas.png.
+- pilgrim-woman-atlas.png: different Thai adult woman, shoulder-length black hair, muted coral short-sleeved T-shirt, charcoal trousers, barefoot.
+- pilgrim-polo-atlas.png: different Thai adult man, short neat black hair, mustard short-sleeved polo, beige khaki trousers, barefoot.
+Shared prompt constraints: preserve rear-view camera, realistic photographic cutout game style, exact four equal-width horizontal cells, scale, positions and common ground baseline; standing prayer, kneeling prayer, hands reaching ground, full prostration; identical character and clothing across poses; true transparency; no backdrop, text, borders, extra figures or robes; wide 3:1 atlas.

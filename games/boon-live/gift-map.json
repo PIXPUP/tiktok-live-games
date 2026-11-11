@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    { "action": "incense", "gift": "Rose" },
+    { "action": "temple", "gift": "Finger Heart" },
+    { "action": "tree", "gift": "Rosa" },
+    { "action": "fruit", "gift": "Perfume" },
+    { "action": "lamp", "gift": "Doughnut" },
+    { "action": "lantern", "gift": "Paper Crane" },
+    { "action": "bell", "gift": "Hand Heart" },
+    { "action": "grand", "gift": "Galaxy" }
+  ]
+}

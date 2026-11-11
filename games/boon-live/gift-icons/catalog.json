@@ -1,0 +1,104 @@
+{
+  "metadataSource": "https://raw.githubusercontent.com/antiops/tiktok-trending-data/main/live-gift-details.json",
+  "gifts": [
+    {
+      "id": "5655",
+      "name": "Rose",
+      "coins": 1,
+      "file": "gift-icons/5655.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.webp",
+      "size": [
+        195,
+        195
+      ]
+    },
+    {
+      "id": "5487",
+      "name": "Finger Heart",
+      "coins": 5,
+      "file": "gift-icons/5487.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a4c4dc437fd3a6632aba149769491f49.png~tplv-obj.webp",
+      "size": [
+        195,
+        195
+      ]
+    },
+    {
+      "id": "8913",
+      "name": "Rosa",
+      "coins": 10,
+      "file": "gift-icons/8913.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eb77ead5c3abb6da6034d3cf6cfeb438~tplv-obj.webp",
+      "size": [
+        168,
+        168
+      ]
+    },
+    {
+      "id": "5658",
+      "name": "Perfume",
+      "coins": 20,
+      "file": "gift-icons/5658.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/20b8f61246c7b6032777bb81bf4ee055~tplv-obj.webp",
+      "size": [
+        195,
+        195
+      ]
+    },
+    {
+      "id": "5879",
+      "name": "Doughnut",
+      "coins": 30,
+      "file": "gift-icons/5879.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4e7ad6bdf0a1d860c538f38026d4e812~tplv-obj.webp",
+      "size": [
+        168,
+        168
+      ]
+    },
+    {
+      "id": "5659",
+      "name": "Paper Crane",
+      "coins": 99,
+      "file": "gift-icons/5659.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/0f158a08f7886189cdabf496e8a07c21~tplv-obj.webp",
+      "size": [
+        195,
+        195
+      ]
+    },
+    {
+      "id": "6968",
+      "name": "Hand Heart",
+      "coins": 100,
+      "file": "gift-icons/6968.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/47e9081623cdae9faa55f4d0d67908bf~tplv-obj.webp",
+      "size": [
+        168,
+        168
+      ]
+    },
+    {
+      "id": "5660",
+      "name": "Hand Heart",
+      "coins": 100,
+      "file": "gift-icons/5660.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/374dfe46d5b09ce1db19be06202d34f5.png~tplv-obj.webp",
+      "size": [
+        168,
+        168
+      ]
+    },
+    {
+      "id": "11046",
+      "name": "Galaxy",
+      "coins": 1000,
+      "file": "gift-icons/11046.webp",
+      "source": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/79a02148079526539f7599150da9fd28.png~tplv-obj.webp",
+      "size": [
+        168,
+        168
+      ]
+    }
+  ]
+}

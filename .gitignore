@@ -1,0 +1,27 @@
+# Local runtime and tunnel state
+*.log
+*.pid
+LIVE_URL.txt
+*_SESSION.json
+__pycache__/
+*.py[cod]
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Installed executables and local downloads
+bin/
+tools/
+*.exe
+*.zip
+
+# Credentials must never be committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+.ngrok/
+.cloudflared/
