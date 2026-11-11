@@ -25,3 +25,13 @@ credentials.json
 secrets.json
 .ngrok/
 .cloudflared/
+
+# Desktop build output
+.build-tools/
+build/
+dist/
+*.spec
+*.partial
+runtime/
+
+desktop-*-report.json

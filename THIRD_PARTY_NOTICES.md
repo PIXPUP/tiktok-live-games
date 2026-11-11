@@ -21,3 +21,8 @@ Active recording: “Ganesha Atharva Sheersha”, Dr Arun Apte, approximately 5:
 ## Generated artwork and synthesized sound
 
 Generated artwork provenance and prompts are recorded in the game folders. Original synthesized background music and effects are implemented in source; browser text-to-speech depends on the voices installed on the host system. This notice does not grant additional rights to third-party voices or recordings.
+
+
+## Desktop runtime bundle
+
+The Windows release bundles an unmodified Node.js executable (MIT and included third-party notices), cloudflared (Apache-2.0), and Python with its license. License files are included in `_internal/runtime`. PyInstaller distributes its bootloader under GPL with its distribution exception; see https://pyinstaller.org/en/stable/license.html. Runtime executables are release assets and are not committed as Git source blobs.

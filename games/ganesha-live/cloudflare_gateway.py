@@ -51,7 +51,7 @@ FILES = {'/': 'text/html', '/index.html': 'text/html', '/style.css': 'text/css',
 
 def follow_game():
     while True:
-        connection = http.client.HTTPConnection('127.0.0.1', 8785, timeout=35)
+        connection = http.client.HTTPConnection('127.0.0.1', int(os.environ.get('GAME_PORT', '8785')), timeout=35)
         try:
             connection.request('GET', '/api/events')
             response = connection.getresponse()
@@ -107,7 +107,7 @@ class CloudflareHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
-        connection = http.client.HTTPConnection('127.0.0.1', 8785, timeout=15)
+        connection = http.client.HTTPConnection('127.0.0.1', int(os.environ.get('GAME_PORT', '8785')), timeout=15)
         try:
             connection.request('GET', self.path)
             response = connection.getresponse()
