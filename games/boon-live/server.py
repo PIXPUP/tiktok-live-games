@@ -96,10 +96,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         with lock:
             event = {'action': action, 'name': name, 'count': count, 'points': POINTS[action] * count}
-            state['score'] += event['points']
-            state['actions'] += count
-            state['players'][name] = state['players'].get(name, 0) + event['points']
-            state['recent'] = [event] + state['recent'][:7]
+            if data.get('preview') is True:
+                event['preview'] = True
+                event['points'] = 0
+            else:
+                state['score'] += event['points']
+                state['actions'] += count
+                state['players'][name] = state['players'].get(name, 0) + event['points']
+                state['recent'] = [event] + state['recent'][:7]
             msg = {'state': json.loads(json.dumps(state)), 'event': event}
             for q in list(clients):
                 try:

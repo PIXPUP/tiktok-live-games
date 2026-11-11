@@ -57,6 +57,16 @@ class ManagerTests(unittest.TestCase):
                     with self.assertRaises(urllib.error.HTTPError) as denied:
                         urllib.request.urlopen(base + '/../../desktop/app.py', timeout=5)
                     self.assertEqual(denied.exception.code, 404)
+                    if game.key != 'curry-shop-3d':
+                        for preview, name in [(True, 'demo-person'), (False, 'real-person')]:
+                            payload = json.dumps({'action': 'incense', 'name': name, 'count': 1, 'preview': preview}).encode()
+                            request = urllib.request.Request(f'http://127.0.0.1:{game.port}/api/event', data=payload, headers={'Content-Type': 'application/json'})
+                            with urllib.request.urlopen(request, timeout=5) as response:
+                                event = json.load(response)
+                            self.assertEqual(event['points'], 0 if preview else 1)
+                        state = json_get(f'http://127.0.0.1:{game.port}/api/state')
+                        self.assertEqual(state['score'], 1)
+                        self.assertEqual(state['players'], {'real-person': 1})
                     if game.key == 'curry-shop-3d':
                         initial = json_get(base + '/api/poll')
                         payload = json.dumps({'action': 'incense', 'name': 'test', 'count': 1}).encode()

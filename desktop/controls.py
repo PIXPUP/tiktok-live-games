@@ -24,6 +24,8 @@ class Controls:
         self.manager, self.speech, self.notify = manager, speech, notify
         self.interval, self.demo_stop = interval, threading.Event()
         self.read_gifts = False
+        self.latest_real_name = None
+        self.observed_game = None
         self.demo_thread = None
         self.closed = threading.Event()
         self.thread = threading.Thread(target=self.listen, daemon=True)
@@ -40,7 +42,7 @@ class Controls:
         if action not in ACTIONS:
             raise ValueError('Unknown action')
         payload = {'action': action, 'name': str(name).strip()[:40] or 'ผู้ชมทดลอง', 'count': 1}
-        if preview and game.key == 'curry-shop-3d':
+        if preview:
             payload['preview'] = True
         request = urllib.request.Request(f'http://127.0.0.1:{game.port}/api/event',
                                          data=json.dumps(payload, ensure_ascii=False).encode(),
@@ -85,6 +87,9 @@ class Controls:
             if not game or not self.manager.running():
                 self.closed.wait(.4)
                 continue
+            if game != self.observed_game:
+                self.latest_real_name = None
+                self.observed_game = game
             connection = http.client.HTTPConnection('127.0.0.1', game.port, timeout=20)
             try:
                 connection.request('GET', '/api/events')
@@ -101,6 +106,9 @@ class Controls:
                     event = message.get('event') if 'state' in message else message
                     if not event or event.get('action') not in ACTIONS:
                         continue
+                    if event.get('preview') is True:
+                        continue
+                    self.latest_real_name = str(event.get('name', ''))[:40]
                     if not self.read_gifts:
                         continue
                     name = str(event.get('name', 'ผู้ร่วมกิจกรรม'))[:40]
@@ -203,7 +211,7 @@ class ControlPanel:
         self.demo = button(demo_row, 'เปิดเดโม · 5 วิ / 1 คน', toggle_demo)
         self.demo.pack(side='left')
         button(demo_row, 'หยุดเสียง / ล้างคิว', speech.stop).pack(side='left', padx=8)
-        text('เดโมส่งครั้งละ 1 คน · เกมทำบุญ/พระพิฆเนศเพิ่มคะแนนจำลอง ควรใช้ก่อนเริ่มรอบจริง', 9, muted)
+        text('เดโมส่งครั้งละ 1 คน · ไม่เพิ่มอันดับจริง · ของขวัญจริงแทรกก่อนเดโม', 9, muted)
         music_row = tk.Frame(self.body, bg=bg)
         music_row.pack(fill='x', padx=22, pady=8)
         def toggle_music():
@@ -298,6 +306,10 @@ class ControlPanel:
             return
         game = self.manager.active
         running = game is not None and self.manager.running()
+        if self.controller.latest_real_name:
+            self.notice.configure(text='ผู้ส่งของขวัญจริงล่าสุด: '+self.controller.latest_real_name)
+        else:
+            self.notice.configure(text='เปิดเดโมค้างได้ · ของขวัญจริงจะแทรกก่อนเดโม')
         self.title.configure(text='ควบคุม: ' + game.title if running else 'ยังไม่ได้เปิดเกม')
         for i, button in enumerate(self.gifts):
             button.configure(text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')

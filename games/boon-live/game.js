@@ -103,17 +103,28 @@ function carpetPlacement(slot){
 }
 /* CARPET PLACEMENT END */
 // Every pilgrim is a transparent character sprite with a real event name.
+/* AVATAR PRIORITY START */
+function avatarAdmission(entries,incomingDemo,limit){
+ if(entries.length<limit)return {allowed:true};
+ const demo=entries.find(entry=>entry[1].demo);
+ if(demo)return {allowed:true,victim:demo[0]};
+ if(incomingDemo)return {allowed:false};
+ return {allowed:true,victim:entries[0][0]};
+}
+/* AVATAR PRIORITY END */
+let lastRealGiftAt=-Infinity;
 function addPilgrim(e,{preview=false}={}){
- $('idle-invite').style.opacity='0';if(liveAvatars.size>=(lowPower?4:6))removePilgrim(liveAvatars.keys().next().value);
+ const demo=preview||e.preview===true,admission=avatarAdmission([...liveAvatars],demo,lowPower?4:6);if(!admission.allowed)return;if(admission.victim!==undefined)removePilgrim(admission.victim);
+ $('idle-invite').style.opacity='0';
  const occupied=new Set([...liveAvatars.values()].map(entry=>entry.slot));
  const slot=Array.from({length:6},(_,i)=>i).find(i=>!occupied.has(i));
  const id=++avatarId,person=document.createElement('div');person.className='pilgrim walking';const human=document.createElement('img');human.className='human';human.src='/pilgrim.png';human.alt='';human.draggable=false;person.append(human);
  const bow=document.createElement('div');bow.className='bow-animation';bow.setAttribute('aria-hidden','true');
  for(const pose of ['stand','kneel','reach','prostrate']){const frame=document.createElement('i');frame.className=`bow-frame pose-${pose}`;bow.append(frame);}person.append(bow);
- const badge=document.createElement('div');badge.className='avatar-name';badge.title=e.name;badge.append(initialBadge(e.name));const text=document.createElement('span');text.className='name-text';text.textContent=e.name;badge.append(text);const nameplate=document.createElement('div');nameplate.className='pilgrim-label';nameplate.append(badge);
+ const badge=document.createElement('div');badge.className='avatar-name';badge.title=e.name;badge.append(initialBadge(e.name));const text=document.createElement('span');text.className='name-text';text.textContent=e.name;badge.append(text);const nameplate=document.createElement('div');nameplate.className='pilgrim-label '+(demo?'demo-person':'real-person');nameplate.append(badge);
  const offering=document.createElement('span');offering.className='avatar-offering';offering.append(giftVisual(byAction[e.action]));person.append(offering);
  const {lane,row,targetX,targetY,startX,startY,exitX,exitY}=carpetPlacement(slot);person.style.left=`${startX}%`;person.style.top=`${startY}%`;person.style.transform='translate(-50%,-100%) scale(1.05)';person.style.zIndex='100';if(preview){person.classList.remove('walking');person.style.left=`${targetX}%`;person.style.top=`${targetY}%`;person.style.transform='translate(-50%,-100%) scale(.95)';}nameplate.style.cssText=person.style.cssText;nameplate.style.zIndex='1';$('avatars').append(person);$('nameplates').append(nameplate);
- const timers=[],bowStart=preview?300:7250,departure=bowStart+6000;liveAvatars.set(id,{person,nameplate,timers,slot});
+ const timers=[],bowStart=preview?300:7250,departure=bowStart+6000;liveAvatars.set(id,{person,nameplate,timers,slot,demo});
  timers.push(setTimeout(()=>{if(!person.isConnected)return;person.style.left=`${targetX}%`;person.style.top=`${targetY}%`;person.style.transform='translate(-50%,-100%) scale(.95)';person.style.zIndex=String(50+row);nameplate.style.cssText=person.style.cssText;nameplate.style.zIndex='1';},80));
  timers.push(setTimeout(()=>{person.classList.remove('walking');person.classList.add('bowing');effectNode('arrival-gift',targetX-2,targetY-12,'',2500).append(giftVisual(byAction[e.action]));},bowStart));
  timers.push(setTimeout(()=>{person.classList.remove('bowing');person.classList.add('departing');person.style.left=`${exitX}%`;person.style.top=`${exitY}%`;nameplate.classList.add('departing');nameplate.style.cssText=person.style.cssText;nameplate.style.zIndex='1';},departure));
@@ -144,10 +155,11 @@ function offeringEffect(e){
  if(e.action==='grand'){card.remove();showCeremony(0,true);sceneEffect('kathin-blessing',8500);}
 }
 function animateEvent(e){
- const o=byAction[e.action];$('toast').textContent=`${e.name} · ${giftName(o)} → ${o.label}${e.count>1?' ×'+e.count:''}  +${e.points.toLocaleString()}`;
+ const demo=e.preview===true;if(!demo)lastRealGiftAt=Date.now();const spotlight=!demo||Date.now()-lastRealGiftAt>6000;
+ const o=byAction[e.action];if(spotlight)$('toast').textContent=`${demo?'เดโม · ':''}${e.name} · ${giftName(o)} → ${o.label}${e.count>1?' ×'+e.count:''}  +${e.points.toLocaleString()}`;
  for(let i=0;i<Math.min(e.count,lowPower?1:4);i++)setTimeout(()=>addPilgrim(e),i*400);
- offeringEffect(e);
- blessingVoice.enqueue(e);
+ if(spotlight)offeringEffect(e);
+ if(!demo)blessingVoice.enqueue(e);
 }
 function showCeremony(number,special=false,preview=false){
  clearTimeout(ceremonyTimer);$('ceremony-title').textContent=preview?'ตัวอย่างมหาพิธี':special?'กฐินสามัคคี':`มหาพิธี ครั้งที่ ${number}`;
@@ -190,9 +202,9 @@ if(pollingMode){
  stream=new EventSource('/api/events');stream.onopen=()=>{$('connection').textContent='● จอเกมพร้อม';};stream.onerror=()=>{$('connection').textContent='○ กำลังเชื่อมต่อใหม่';};
  stream.onmessage=msg=>{try{applyGameMessage(JSON.parse(msg.data));}catch(error){console.error(error);}};
 }
-async function send(action,name){try{const response=await fetch('/api/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,name:name||$('name').value,count:1})});if(!response.ok)throw Error(`HTTP ${response.status}`);$('error').textContent='';}catch(err){$('error').textContent='ส่งกิจกรรมไม่สำเร็จ กรุณาตรวจว่าเซิร์ฟเวอร์เปิดอยู่ แล้วลองอีกครั้ง';}}
+async function send(action,name,preview=false){try{const response=await fetch('/api/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,name:name||$('name').value,count:1,...(preview?{preview:true}:{})})});if(!response.ok)throw Error(`HTTP ${response.status}`);$('error').textContent='';}catch(err){$('error').textContent='ส่งกิจกรรมไม่สำเร็จ กรุณาตรวจว่าเซิร์ฟเวอร์เปิดอยู่ แล้วลองอีกครั้ง';}}
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea')||e.repeat||e.ctrlKey||e.altKey||e.metaKey)return;const o=offerings[Number(e.key)-1];if(o)send(o.action);});
-$('demo').onclick=()=>{if(demoTimer){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='▷ เริ่มเดโมผู้ชม';return;}const names=['แสงดาว','ใจดี','สายบุญ','น้องฟ้า','ต้นกล้า','มะลิ','ปันปัน'];const next=()=>send(offerings[Math.floor(Math.random()*7)].action,names[Math.floor(Math.random()*names.length)]);next();demoTimer=setInterval(next,5000);$('demo').textContent='◼ หยุดเดโมผู้ชม';};
+$('demo').onclick=()=>{if(demoTimer){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='▷ เริ่มเดโมผู้ชม';return;}const names=['แสงดาว','ใจดี','สายบุญ','น้องฟ้า','ต้นกล้า','มะลิ','ปันปัน'];const next=()=>send(offerings[Math.floor(Math.random()*7)].action,names[Math.floor(Math.random()*names.length)],true);next();demoTimer=setInterval(next,5000);$('demo').textContent='◼ หยุดเดโมผู้ชม';};
 $('preview-bow').onclick=()=>addPilgrim({name:'ตัวอย่างท่ากราบ',action:'temple',count:1},{preview:true});
 $('preview-ceremony').onclick=()=>showCeremony(1,false,true);
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else $('game-shell').requestFullscreen().catch(()=>$('error').textContent='เปิดลิงก์หน้าจอ OBS เพื่อดูเกมเต็มหน้าได้ค่ะ');};

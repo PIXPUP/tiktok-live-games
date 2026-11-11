@@ -151,3 +151,6 @@ html.live-overlay .stage{border-radius:0;box-shadow:none}
 .lite .buddha-aura-glow{filter:none;animation:none;opacity:.35}
 .lite .pilgrim,.lite .bow-animation,.lite .avatar-name{filter:none}
 .lite .merit-spark,.lite .effect-lantern,.lite .petal,.lite .rice-grain{display:none!important}
+
+.demo-person .avatar-name{opacity:.72}
+.real-person .avatar-name{border-color:#fff0a8;box-shadow:0 0 10px #ffc96585}

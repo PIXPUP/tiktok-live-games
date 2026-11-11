@@ -68,6 +68,11 @@ class ControlsTests(unittest.TestCase):
             try:
                 game = dataclasses.replace(GAMES[1], port=port(), bridge=port(), gateway=port())
                 manager.start(game)
+                controls.send('grand', 'ชื่อเดโม', preview=True)
+                from manager import json_get
+                state = json_get(f'http://127.0.0.1:{game.port}/api/state')
+                self.assertEqual(state['score'], 0)
+                self.assertNotIn('ชื่อเดโม', state['players'])
                 # Wait until the event listener has subscribed; retry boundedly if startup races.
                 for attempt in range(15):
                     controls.send('incense', 'ผู้ชมทดสอบ')
@@ -76,6 +81,10 @@ class ControlsTests(unittest.TestCase):
                 self.assertTrue(speaker.messages)
                 self.assertIn('ผู้ชมทดสอบ', speaker.messages[0])
                 self.assertIn('ถวายดอกไม้', speaker.messages[0])
+                self.assertEqual(controls.latest_real_name, 'ผู้ชมทดสอบ')
+                state = json_get(f'http://127.0.0.1:{game.port}/api/state')
+                self.assertIn('ผู้ชมทดสอบ', state['players'])
+                self.assertNotIn('ชื่อเดโม', state['players'])
             finally:
                 controls.close()
                 manager.close()
