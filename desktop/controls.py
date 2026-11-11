@@ -124,11 +124,12 @@ class Controls:
 
 
 class ControlPanel:
-    def __init__(self, parent, manager, controller, speech, notify):
+    def __init__(self, parent, manager, controller, speech, notify, music=None):
         import tkinter as tk
         from tkinter import ttk
         from speech import VOICES
         self.manager, self.controller, self.speech = manager, controller, speech
+        self.music = music
         self.window = tk.Toplevel(parent)
         self.window.title('หน้าควบคุมเกม — TikTok LIVE Game Desk')
         self.window.geometry('820x750')
@@ -203,6 +204,27 @@ class ControlPanel:
         self.demo.pack(side='left')
         button(demo_row, 'หยุดเสียง / ล้างคิว', speech.stop).pack(side='left', padx=8)
         text('เดโมส่งครั้งละ 1 คน · เกมทำบุญ/พระพิฆเนศเพิ่มคะแนนจำลอง ควรใช้ก่อนเริ่มรอบจริง', 9, muted)
+        music_row = tk.Frame(self.body, bg=bg)
+        music_row.pack(fill='x', padx=22, pady=8)
+        def toggle_music():
+            if not self.music:
+                return
+            try:
+                if self.music.running:
+                    self.music.stop()
+                else:
+                    self.music.start()
+            except Exception:
+                notify('เปิดเพลงไม่ได้ กรุณาตรวจอุปกรณ์เสียงแล้วลองใหม่')
+        self.music_button = button(music_row, 'เปิดเพลงคลอ', toggle_music)
+        self.music_button.pack(side='left')
+        self.music_volume = tk.Scale(music_row, from_=0, to=70, orient='horizontal',
+                                    label='ความดังเพลง', bg=bg, fg=fg, troughcolor='#25364e',
+                                    highlightthickness=0, length=280, font=(font, 10),
+                                    command=lambda value: self.music.set_volume(float(value)/100) if self.music else None)
+        self.music_volume.set((self.music.volume if self.music else .35)*100)
+        self.music_volume.pack(side='left', padx=16)
+        text('เพลงออกจากโปรแกรม วนให้อัตโนมัติและลดเสียงตอนพูด ไม่ต้องเปิดเพลงซ้ำในหน้าเว็บ', 9, muted)
         text('เสียงพูดภาษาไทยออนไลน์', 16)
         text('ไม่ต้องติดตั้งโมเดลหรือเสียงไทยใน Windows · ต้องใช้อินเทอร์เน็ต', 10, muted)
         voice_row = tk.Frame(self.body, bg=bg)
@@ -280,6 +302,8 @@ class ControlPanel:
         for i, button in enumerate(self.gifts):
             button.configure(text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')
         self.demo.configure(text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
+        supported = running and game.key in ('boon-live', 'ganesha-live') and self.music is not None
+        self.music_button.configure(text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
         if game and self.key != game.key:
             self.key = game.key
             self.script.delete('1.0', 'end')

@@ -3,6 +3,7 @@ import collections
 import http.client
 import json
 import os
+import re
 import threading
 import time
 import uuid
@@ -98,7 +99,7 @@ class CloudflareHandler(BaseHTTPRequestHandler):
             else:
                 self.reply(200 if data['ready'] else 503, data if parsed.path == '/api/poll' else data.get('state', {}))
             return
-        if parsed.path not in FILES:
+        if parsed.path not in FILES and not re.fullmatch(r'/assets/[a-f0-9]{64}\.(?:png|webp|jpg|mp3)', parsed.path):
             self.send_error(404)
             return
         if parsed.path in ('/', '/index.html') and ('overlay' not in query or query.get('transport') != ['poll']):
@@ -113,9 +114,9 @@ class CloudflareHandler(BaseHTTPRequestHandler):
             response = connection.getresponse()
             body = response.read()
             self.send_response(response.status)
-            self.send_header('Content-Type', response.getheader('Content-Type', FILES[parsed.path]))
+            self.send_header('Content-Type', response.getheader('Content-Type', FILES.get(parsed.path, 'application/octet-stream')))
             self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Cache-Control', response.getheader('Cache-Control', 'no-cache') if parsed.path.startswith('/assets/') else 'no-cache')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.end_headers()
             self.wfile.write(body)

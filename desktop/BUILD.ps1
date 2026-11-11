@@ -23,6 +23,8 @@ try {
         Move-Item -LiteralPath "$cloudflared.partial" -Destination $cloudflared -Force
     }
     # The executable is a release asset, never committed as a Git blob.
+    python desktop/music.py (Join-Path $runtime 'merit-background.wav')
+    if ($LASTEXITCODE -ne 0) { throw 'Music asset build failed' }
     foreach ($metadata in Get-ChildItem -LiteralPath (Join-Path $root '.build-tools') -Directory -Filter '*.dist-info') {
         $licenseSource = Join-Path $metadata.FullName 'licenses'
         if (Test-Path -LiteralPath $licenseSource) {
@@ -40,7 +42,7 @@ try {
         --copy-metadata edge-tts --hidden-import gtts --copy-metadata gTTS --collect-data certifi desktop/app.py
     if ($LASTEXITCODE -ne 0) { throw 'Desktop build failed' }
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'QUICK_START.txt') -Destination (Join-Path $root 'dist/TikTokLiveGameDesk/READ_ME_FIRST.txt') -Force
-    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.1.0-Windows-x64.zip'
+    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.2.0-Windows-x64.zip'
     Compress-Archive -Path (Join-Path $root 'dist/TikTokLiveGameDesk') -DestinationPath $archive -Force
     Write-Host "Built: $archive"
 } finally { Pop-Location }

@@ -2,6 +2,8 @@
 import json
 import os
 import queue
+import re
+import shutil
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -28,7 +30,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/events':
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
-            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if path.startswith('/assets/') else 'no-cache')
             self.end_headers()
             q = queue.Queue(maxsize=100)
             with lock:
@@ -55,6 +57,8 @@ class Handler(BaseHTTPRequestHandler):
         files = {'/': 'index.html', '/index.html': 'index.html', '/style.css': 'style.css',
                  '/game.js': 'game.js', '/temple-bg.png': 'temple-bg.png',
                  '/pilgrim.png': 'pilgrim.png'}
+        if re.fullmatch(r'/assets/[a-f0-9]{64}\.(?:png|webp|jpg|mp3)', path):
+            files[path] = path.lstrip('/')
         if path not in files:
             self.send_error(404)
             return
@@ -62,13 +66,14 @@ class Handler(BaseHTTPRequestHandler):
         if not file_path.is_file():
             self.send_error(404)
             return
-        body = file_path.read_bytes()
+        size = file_path.stat().st_size
         self.send_response(200)
-        self.send_header('Content-Type', {'html':'text/html; charset=utf-8', 'css':'text/css', 'js':'text/javascript', 'png':'image/png'}[files[path].split('.')[-1]])
+        self.send_header('Content-Type', {'html':'text/html; charset=utf-8', 'css':'text/css', 'js':'text/javascript', 'png':'image/png', 'webp':'image/webp', 'jpg':'image/jpeg', 'mp3':'audio/mpeg'}[files[path].split('.')[-1]])
         self.send_header('Cache-Control', 'no-cache')
-        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Content-Length', str(size))
         self.end_headers()
-        self.wfile.write(body)
+        with file_path.open('rb') as source:
+            shutil.copyfileobj(source, self.wfile, 65536)
 
     def do_POST(self):
         if urlparse(self.path).path != '/api/event':

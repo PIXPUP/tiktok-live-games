@@ -51,6 +51,12 @@ def self_test(report_path):
                     if '--test-tunnel' in sys.argv:
                         url = manager.start_public()
                         assert url.startswith('https://')
+                        import hashlib
+                        import urllib.request
+                        assets = list((manager.games_dir / game.key / 'assets').iterdir())
+                        asset = next((p for p in assets if p.suffix == '.mp3'), assets[0])
+                        with urllib.request.urlopen(url.split('/?')[0] + '/assets/' + asset.name, timeout=25) as response:
+                            assert hashlib.sha256(response.read()).hexdigest() == asset.stem
                     results.append({'game': game.key, 'running': True, 'public': bool(manager.public_url)})
                     manager.stop()
                     assert not manager.running()
@@ -70,7 +76,22 @@ def self_test(report_path):
                         voice_checks.append({'voice': voice, 'bytes': path.stat().st_size, 'decoded': True})
                 finally:
                     speaker.close()
-        result = {'ok': True, 'games': results, 'voices': voice_checks}
+        music_checked = False
+        if '--test-music' in sys.argv:
+            from music import Music
+            import time
+            music = Music(ROOT / 'runtime' / 'merit-background.wav')
+            try:
+                music.set_volume(0)
+                music.start()
+                time.sleep(.2)
+                assert music.running and music.player.command('status desk_music mode') == 'playing'
+                music.stop()
+                assert not music.running
+                music_checked = True
+            finally:
+                music.close()
+        result = {'ok': True, 'games': results, 'voices': voice_checks, 'music': music_checked}
     except Exception:
         result = {'ok': False, 'games': results, 'error': traceback.format_exc()}
     Path(report_path).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -83,6 +104,7 @@ def main():
     from manager import GAMES, Manager, VERSION
     from speech import Speech
     from controls import Controls, ControlPanel
+    from music import Music
 
     # A second copy must not compete for ownership of the same game processes.
     mutex = None
@@ -101,6 +123,10 @@ def main():
     messages = queue.Queue()
     manager = Manager(ROOT, data, lambda text: messages.put(('message', text)))
     speech = Speech(data / 'speech-cache', lambda text: messages.put(('speech', text)))
+    music_path = ROOT / 'runtime' / 'merit-background.wav'
+    if not music_path.exists():
+        music_path = data / 'merit-background.wav'
+    music = Music(music_path, lambda: speech.speaking)
     controller = Controls(manager, speech, lambda text: messages.put(('message', text)))
     control_panel = None
     window = tk.Tk()
@@ -154,6 +180,7 @@ def main():
         def start():
             controller.stop_demo()
             speech.stop()
+            music.stop()
             manager.stop()
             manager.start(game)
         work(start, lambda _: open_controls())
@@ -163,7 +190,7 @@ def main():
         if not manager.running():
             return
         if control_panel is None or not control_panel.window.winfo_exists():
-            control_panel = ControlPanel(window, manager, controller, speech, lambda text: messages.put(('message', text)))
+            control_panel = ControlPanel(window, manager, controller, speech, lambda text: messages.put(('message', text)), music=music)
         else:
             control_panel.window.deiconify()
             control_panel.window.lift()
@@ -173,6 +200,7 @@ def main():
             def stop():
                 controller.stop_demo()
                 speech.stop()
+                music.stop()
                 manager.stop()
             work(stop, lambda _: status.set('ปิดเกมแล้ว เลือกเกมใหม่ได้เลย'))
 
@@ -241,6 +269,17 @@ def main():
     button(top_actions, 'เปิด TikFinity', launch_tikfinity).pack(side='left', padx=4)
     button(top_actions, 'วิธีใช้งาน', help_user).pack(side='left', padx=4)
 
+    performance = tk.Frame(content, bg=bg)
+    performance.pack(fill='x', padx=28, pady=(0, 10))
+    low_memory = tk.BooleanVar(value=manager.low_memory)
+    def apply_performance():
+        manager.set_low_memory(low_memory.get())
+        status.set('ปรับโหมดแล้ว คัดลอกลิงก์ไปวางใหม่และรีเฟรชหน้าจอไลฟ์เพื่อใช้โหมดนี้')
+    tk.Checkbutton(performance, text='โหมดประหยัดสำหรับคอม RAM 4 GB', variable=low_memory,
+                   command=apply_performance, bg=bg, fg=green, selectcolor=surface,
+                   activebackground=bg, activeforeground=green, font=(font, 11)).pack(side='left')
+    label(performance, 'ลดเอฟเฟกต์ • เกม 3D สูงสุด 30 FPS • ใช้หน้าจอไลฟ์เพียงจอเดียว', 10, muted).pack(side='left', padx=15)
+
     row = tk.Frame(content, bg=bg)
     row.pack(fill='x', padx=24)
     for index, game in enumerate(GAMES):
@@ -265,9 +304,9 @@ def main():
     controls.pack(fill='x')
     control_button = button(controls, 'หน้าควบคุมในโปรแกรม', open_controls)
     control_button.pack(side='left', padx=(0, 7))
-    screen_button = button(controls, 'หน้าจอไลฟ์ในเครื่อง', lambda: webbrowser.open(manager.active.url + '&overlay=1') if manager.active else None)
+    screen_button = button(controls, 'หน้าจอไลฟ์ในเครื่อง', lambda: webbrowser.open(manager.control_url() + '&overlay=1') if manager.active else None)
     screen_button.pack(side='left', padx=(0, 7))
-    button(controls, 'ตั้งค่าเว็บเพิ่มเติม', lambda: webbrowser.open(manager.active.url) if manager.active else None).pack(side='left', padx=(0, 7))
+    button(controls, 'ตั้งค่าเว็บเพิ่มเติม', lambda: webbrowser.open(manager.control_url()) if manager.active else None).pack(side='left', padx=(0, 7))
     stop_button = button(controls, 'ปิดเกม', stop_game)
     stop_button.pack(side='right')
 
@@ -376,6 +415,7 @@ def main():
         def shutdown():
             try:
                 controller.close()
+                music.close()
                 manager.close()
             finally:
                 shutdown_done.set()

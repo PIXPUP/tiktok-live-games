@@ -1,6 +1,7 @@
 """Allowlisted, read-only HTTP gateway; no credentials or local control routes."""
 import http.client
 import json
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -23,7 +24,7 @@ def serve(source_port, gateway_port):
                 self.end_headers()
                 self.wfile.write(body)
                 return
-            if route not in STATIC | {'/api/poll', '/api/bridge'}:
+            if route not in STATIC | {'/api/poll', '/api/bridge'} and not re.fullmatch(r'/assets/[a-f0-9]{64}\.(?:png|webp|jpg|mp3)', route):
                 self.send_error(404)
                 return
             upstream = http.client.HTTPConnection('127.0.0.1', source_port, timeout=12)
@@ -33,7 +34,7 @@ def serve(source_port, gateway_port):
                 body = response.read()
                 self.send_response(response.status)
                 self.send_header('Content-Type', response.getheader('Content-Type', 'application/octet-stream'))
-                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Cache-Control', response.getheader('Cache-Control', 'no-store') if route.startswith('/assets/') else 'no-store')
                 self.send_header('X-Content-Type-Options', 'nosniff')
                 self.send_header('Content-Length', str(len(body)))
                 self.end_headers()

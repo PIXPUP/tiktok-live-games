@@ -10,13 +10,13 @@ TikTok gift imagery is third-party material. See each game's artwork/source note
 
 ## Buddhist chant — boon-live
 
-Active recording: Wat Marp Jan, “1278 ทำวัตรเช้า – ไม่แปล”, approximately 16:27. The playback recording is embedded in `games/boon-live/game.js`. Provenance and the unresolved commercial-use status are documented in `games/boon-live/chant-audio/WATMARPJAN-SOURCE.md`.
+Active recording: Wat Marp Jan, “1278 ทำวัตรเช้า – ไม่แปล”, approximately 16:27. The playback recording is referenced by `games/boon-live/game.js` and stored unchanged as a content-hashed MP3 under its `assets` folder. Provenance and the unresolved commercial-use status are documented in `games/boon-live/chant-audio/WATMARPJAN-SOURCE.md`.
 
 Public availability, credit, and an assertion of fair use do not establish permission for redistribution or commercial streaming. No such clearance is represented by this repository. Other chant notes describe earlier alternatives, not the currently active recording; their audio files are not bundled separately.
 
 ## Ganesha chant — ganesha-live
 
-Active recording: “Ganesha Atharva Sheersha”, Dr Arun Apte, approximately 5:41, from https://www.symb-ol.org/audio-files/ (item 1). The publisher's footer states that its materials have no copyright and requests that their meaning and purpose are not substantially altered. Ownership and direct commercial LIVE clearance from the recording rightsholder have not been independently established. See `games/ganesha-live/chant-audio/SOURCE.md`. The playback copy is embedded in the game's JavaScript.
+Active recording: “Ganesha Atharva Sheersha”, Dr Arun Apte, approximately 5:41, from https://www.symb-ol.org/audio-files/ (item 1). The publisher's footer states that its materials have no copyright and requests that their meaning and purpose are not substantially altered. Ownership and direct commercial LIVE clearance from the recording rightsholder have not been independently established. See `games/ganesha-live/chant-audio/SOURCE.md`. The playback copy is referenced by the game's JavaScript and stored unchanged as a content-hashed MP3 under its assets folder.
 
 ## Generated artwork and synthesized sound
 

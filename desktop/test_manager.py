@@ -45,6 +45,11 @@ class ManagerTests(unittest.TestCase):
                     self.assertTrue(json_get(base + '/health')['readOnly'])
                     with urllib.request.urlopen(base + '/?overlay=1&transport=poll', timeout=5) as response:
                         self.assertIn(b'<html', response.read())
+                    assets = list((directory / 'assets').iterdir())
+                    for asset in assets:
+                        with urllib.request.urlopen(base + '/assets/' + asset.name, timeout=5) as response:
+                            import hashlib
+                            self.assertEqual(hashlib.sha256(response.read()).hexdigest(), asset.stem)
                     for route in ['/api/event', '/api/bridge/config']:
                         with self.assertRaises(urllib.error.HTTPError) as denied:
                             urllib.request.urlopen(urllib.request.Request(base + route, data=b'{}'), timeout=5)

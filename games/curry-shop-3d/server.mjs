@@ -30,9 +30,10 @@ const server=http.createServer(async(req,res)=>{
   }catch{res.writeHead(400);res.end('Invalid event');}return;
  }
  const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/vendor/three.module.js':'vendor/three.module.js'};
+ if(/^\/assets\/[a-f0-9]{64}\.(png|webp|jpg|mp3)$/.test(url.pathname)&&fs.existsSync(path.join(root,url.pathname.slice(1))))files[url.pathname]=url.pathname.slice(1);
  if(req.method!=='GET'||!files[url.pathname]){res.writeHead(404);res.end();return;}
- const file=files[url.pathname],types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8'};
- res.writeHead(200,{'Content-Type':types[path.extname(file)],'Cache-Control':'no-cache'});fs.createReadStream(path.join(root,file)).pipe(res);
+ const file=files[url.pathname],types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.mp3':'audio/mpeg'};
+ res.writeHead(200,{'Content-Type':types[path.extname(file)],'Cache-Control':file.startsWith('assets/')?'public, max-age=31536000, immutable':'no-cache'});fs.createReadStream(path.join(root,file)).pipe(res);
 });
 const bridge=startBridge({root,gameUrl:`http://127.0.0.1:${gamePort}`,port:bridgePort});
 const heartbeat=setInterval(()=>{for(const c of clients)c.write(': heartbeat\n\n');},15000);

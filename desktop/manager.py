@@ -12,8 +12,20 @@ import time
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
+
+
+def physical_ram_gb():
+    if os.name != 'nt':
+        return None
+    class Status(ctypes.Structure):
+        _fields_ = [('length', ctypes.c_uint32), ('load', ctypes.c_uint32)] + [
+            (key, ctypes.c_uint64) for key in ('total', 'available', 'page', 'available_page', 'virtual', 'available_virtual', 'extended')]
+    status = Status()
+    status.length = ctypes.sizeof(status)
+    return status.total / 1024**3 if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)) else None
 
 
 @dataclass(frozen=True)
@@ -105,6 +117,14 @@ class Manager:
     def __init__(self, root, data, notify=lambda message: None):
         self.root, self.data, self.notify = Path(root), Path(data), notify
         self.data.mkdir(parents=True, exist_ok=True)
+        self.ram_gb = physical_ram_gb()
+        self.low_memory = self.ram_gb is not None and self.ram_gb < 6
+        try:
+            saved = json.loads((self.data / 'performance.json').read_text())
+            if isinstance(saved.get('low_memory'), bool):
+                self.low_memory = saved['low_memory']
+        except (OSError, ValueError):
+            pass
         self.games_dir = self.root / 'games'
         self.processes = {}
         self.active = None
@@ -112,6 +132,21 @@ class Manager:
         self.lock = threading.RLock()
         self.cancel = threading.Event()
         self.group = ProcessGroup()
+
+    def control_url(self):
+        if not self.active:
+            return ''
+        return self.active.url + ('&lite=1' if self.low_memory else '')
+
+    def set_low_memory(self, enabled):
+        self.low_memory = bool(enabled)
+        (self.data / 'performance.json').write_text(json.dumps({'low_memory': self.low_memory}))
+        if self.public_url:
+            parts = urlsplit(self.public_url)
+            query = [(key, value) for key, value in parse_qsl(parts.query) if key != 'lite']
+            if self.low_memory:
+                query.append(('lite', '1'))
+            self.public_url = urlunsplit(parts._replace(query=urlencode(query)))
 
     def prepare(self):
         if getattr(sys, 'frozen', False):
@@ -251,6 +286,8 @@ class Manager:
                                 ready = json.load(response).get('ready')
                             if ready:
                                 self.public_url = candidate + '/?overlay=1&transport=poll&v=' + str(game.version)
+                                if self.low_memory:
+                                    self.public_url += '&lite=1'
                                 self.notify('ลิงก์พร้อมแล้ว กดคัดลอกไปวางใน LIVE Studio ได้เลย')
                                 return self.public_url
                         except (OSError, ValueError):
