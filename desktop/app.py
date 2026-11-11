@@ -56,7 +56,21 @@ def self_test(report_path):
                     assert not manager.running()
             finally:
                 manager.close()
-        result = {'ok': True, 'games': results}
+        voice_checks = []
+        if '--test-speech' in sys.argv:
+            from speech import Speech, VOICES
+            with tempfile.TemporaryDirectory(prefix='game-desk-speech-test-') as temporary:
+                speaker = Speech(temporary)
+                try:
+                    for index, voice in enumerate(VOICES.values()):
+                        path = Path(temporary) / f'thai-{index}.mp3'
+                        speaker.render('ขอบคุณค่ะ ขอให้มีความสุข สุขภาพแข็งแรง', voice, path)
+                        assert path.stat().st_size > 500
+                        speaker.player.play(path, 0, lambda: False)
+                        voice_checks.append({'voice': voice, 'bytes': path.stat().st_size, 'decoded': True})
+                finally:
+                    speaker.close()
+        result = {'ok': True, 'games': results, 'voices': voice_checks}
     except Exception:
         result = {'ok': False, 'games': results, 'error': traceback.format_exc()}
     Path(report_path).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -67,6 +81,8 @@ def main():
     import tkinter as tk
     from tkinter import filedialog, messagebox
     from manager import GAMES, Manager, VERSION
+    from speech import Speech
+    from controls import Controls, ControlPanel
 
     # A second copy must not compete for ownership of the same game processes.
     mutex = None
@@ -84,6 +100,9 @@ def main():
     data = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'TikTokLiveGameDesk'
     messages = queue.Queue()
     manager = Manager(ROOT, data, lambda text: messages.put(('message', text)))
+    speech = Speech(data / 'speech-cache', lambda text: messages.put(('speech', text)))
+    controller = Controls(manager, speech, lambda text: messages.put(('message', text)))
+    control_panel = None
     window = tk.Tk()
     window.title('TikTok LIVE Game Desk — รวมเกมไลฟ์')
     height = min(780, window.winfo_screenheight() - 90)
@@ -127,19 +146,35 @@ def main():
 
     def open_game(game):
         if manager.active == game and manager.running():
-            webbrowser.open(game.url)
+            open_controls()
             return
         if manager.active and not messagebox.askyesno('เปลี่ยนเกม', 'ปิดเกมปัจจุบันและเปิดเกมนี้แทนไหม?\nคะแนน/คิวรอบเดิมจะถูกล้าง และลิงก์ไลฟ์เดิมจะหยุดทำงาน'):
             return
 
         def start():
+            controller.stop_demo()
+            speech.stop()
             manager.stop()
             manager.start(game)
-        work(start, lambda _: webbrowser.open(game.url))
+        work(start, lambda _: open_controls())
+
+    def open_controls():
+        nonlocal control_panel
+        if not manager.running():
+            return
+        if control_panel is None or not control_panel.window.winfo_exists():
+            control_panel = ControlPanel(window, manager, controller, speech, lambda text: messages.put(('message', text)))
+        else:
+            control_panel.window.deiconify()
+            control_panel.window.lift()
 
     def stop_game():
         if manager.active and messagebox.askyesno('ปิดเกม', 'ปิดเกมและลิงก์ไลฟ์ไหม?\nคะแนน/คิวรอบนี้จะถูกล้าง'):
-            work(manager.stop, lambda _: status.set('ปิดเกมแล้ว เลือกเกมใหม่ได้เลย'))
+            def stop():
+                controller.stop_demo()
+                speech.stop()
+                manager.stop()
+            work(stop, lambda _: status.set('ปิดเกมแล้ว เลือกเกมใหม่ได้เลย'))
 
     def public_start():
         work(manager.start_public)
@@ -228,10 +263,11 @@ def main():
     tk.Label(panel, textvariable=gift, font=(font, 11), bg=surface, fg=muted).pack(anchor='w', pady=(3, 10))
     controls = tk.Frame(panel, bg=surface)
     controls.pack(fill='x')
-    control_button = button(controls, 'หน้าควบคุมเกม', lambda: webbrowser.open(manager.active.url) if manager.active else None)
+    control_button = button(controls, 'หน้าควบคุมในโปรแกรม', open_controls)
     control_button.pack(side='left', padx=(0, 7))
     screen_button = button(controls, 'หน้าจอไลฟ์ในเครื่อง', lambda: webbrowser.open(manager.active.url + '&overlay=1') if manager.active else None)
     screen_button.pack(side='left', padx=(0, 7))
+    button(controls, 'ตั้งค่าเว็บเพิ่มเติม', lambda: webbrowser.open(manager.active.url) if manager.active else None).pack(side='left', padx=(0, 7))
     stop_button = button(controls, 'ปิดเกม', stop_game)
     stop_button.pack(side='right')
 
@@ -300,6 +336,10 @@ def main():
                 status.set(content)
             elif kind == 'gift':
                 gift.set(content)
+            elif kind == 'speech':
+                status.set(content)
+                if control_panel is not None:
+                    control_panel.show_status(content)
             elif kind == 'done':
                 busy = False
                 callback, result = content
@@ -335,6 +375,7 @@ def main():
 
         def shutdown():
             try:
+                controller.close()
                 manager.close()
             finally:
                 shutdown_done.set()

@@ -25,4 +25,8 @@ Generated artwork provenance and prompts are recorded in the game folders. Origi
 
 ## Desktop runtime bundle
 
+Desktop 1.1.0 adds edge-tts (https://github.com/rany2/edge-tts, LGPL-3.0) and its Python dependencies. Their packaged license texts are included under `_internal/runtime/licenses`. The online speech service is external; no ownership of its voices or unconditional service availability is claimed. Source for this application is available in the desktop folder of this repository; dependency source is available from its respective project distributions.
+
+The default Thai online voice uses gTTS (https://gtts.readthedocs.io/, MIT) to access Google Translate TTS. gTTS and dependency license notices are included in the runtime bundle. Google and Microsoft services are not hosted by this application; online speech requires an internet connection and may be rate-limited or unavailable.
+
 The Windows release bundles an unmodified Node.js executable (MIT and included third-party notices), cloudflared (Apache-2.0), and Python with its license. License files are included in `_internal/runtime`. PyInstaller distributes its bootloader under GPL with its distribution exception; see https://pyinstaller.org/en/stable/license.html. Runtime executables are release assets and are not committed as Git source blobs.

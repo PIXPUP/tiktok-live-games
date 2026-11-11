@@ -13,7 +13,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 
 
 @dataclass(frozen=True)
@@ -120,6 +120,17 @@ class Manager:
             if not marker.exists():
                 self.notify('กำลังเตรียมเกมครั้งแรก…')
                 shutil.copytree(self.root / 'games', target, dirs_exist_ok=True)
+                previous = sorted((p for p in self.data.glob('games-*') if p.is_dir() and p != target),
+                                  key=lambda p: p.stat().st_mtime, reverse=True)
+                if previous:
+                    for game in GAMES:
+                        old = previous[0] / game.key / 'gift-map.json'
+                        try:
+                            mapping = json.loads(old.read_text(encoding='utf-8-sig'))
+                            if isinstance(mapping.get('bindings'), list):
+                                shutil.copy2(old, target / game.key / 'gift-map.json')
+                        except (OSError, ValueError):
+                            pass
                 marker.write_text(VERSION)
             self.games_dir = target
 

@@ -23,15 +23,24 @@ try {
         Move-Item -LiteralPath "$cloudflared.partial" -Destination $cloudflared -Force
     }
     # The executable is a release asset, never committed as a Git blob.
+    foreach ($metadata in Get-ChildItem -LiteralPath (Join-Path $root '.build-tools') -Directory -Filter '*.dist-info') {
+        $licenseSource = Join-Path $metadata.FullName 'licenses'
+        if (Test-Path -LiteralPath $licenseSource) {
+            $licenseTarget = Join-Path $runtime ('licenses\' + $metadata.Name)
+            New-Item -ItemType Directory -Path $licenseTarget -Force | Out-Null
+            Copy-Item -Path (Join-Path $licenseSource '*') -Destination $licenseTarget -Recurse -Force
+        }
+    }
     $env:PYTHONPATH = Join-Path $root '.build-tools'
     python -m PyInstaller --noconfirm --onedir --windowed --name TikTokLiveGameDesk `
         --add-data 'games:games' --add-data 'runtime:runtime' --add-data 'desktop/bridge.mjs:desktop' `
         --add-data 'THIRD_PARTY_NOTICES.md:.' --add-data 'README.md:.' `
         --hidden-import http.server --hidden-import queue --hidden-import uuid --hidden-import collections `
-        --hidden-import tkinter.filedialog --hidden-import tkinter.messagebox desktop/app.py
+        --hidden-import tkinter.filedialog --hidden-import tkinter.messagebox --hidden-import edge_tts `
+        --copy-metadata edge-tts --hidden-import gtts --copy-metadata gTTS --collect-data certifi desktop/app.py
     if ($LASTEXITCODE -ne 0) { throw 'Desktop build failed' }
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'QUICK_START.txt') -Destination (Join-Path $root 'dist/TikTokLiveGameDesk/READ_ME_FIRST.txt') -Force
-    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-Windows-x64.zip'
+    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.1.0-Windows-x64.zip'
     Compress-Archive -Path (Join-Path $root 'dist/TikTokLiveGameDesk') -DestinationPath $archive -Force
     Write-Host "Built: $archive"
 } finally { Pop-Location }

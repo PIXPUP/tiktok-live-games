@@ -23,6 +23,7 @@ const server=http.createServer(async(req,res)=>{
   try{let raw='';for await(const c of req){raw+=c;if(raw.length>8192)throw Error('large');}const e=JSON.parse(raw);
    if(!actions.has(e.action)||!Number.isInteger(e.count)||e.count<1||e.count>100)throw Error('invalid');
    const event={id:++id,action:e.action,name:String(e.name||'ผู้ชม').slice(0,40),count:e.count};
+   if(e.preview===true)event.preview=true;
    journal.push(event);if(journal.length>512)journal.shift();
    for(const client of clients)client.write('data: '+JSON.stringify(event)+'\n\n');
    res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,id}));

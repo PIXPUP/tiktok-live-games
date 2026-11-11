@@ -198,7 +198,7 @@ if(pollingMode){
 }
 async function send(action,name){try{const response=await fetch('/api/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,name:name||$('name').value,count:1})});if(!response.ok)throw Error(`HTTP ${response.status}`);$('error').textContent='';}catch(err){$('error').textContent='ส่งกิจกรรมไม่สำเร็จ กรุณาตรวจว่าเซิร์ฟเวอร์เปิดอยู่ แล้วลองอีกครั้ง';}}
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea')||e.repeat||e.ctrlKey||e.altKey||e.metaKey)return;const o=offerings[Number(e.key)-1];if(o)send(o.action);});
-$('demo').onclick=()=>{if(demoTimer){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='▷ เริ่มเดโมผู้ชม';return;}const names=['แสงดาว','ใจดี','สายบุญ','น้องฟ้า','ต้นกล้า','มะลิ','ปันปัน'];const next=()=>send(offerings[Math.floor(Math.random()*7)].action,names[Math.floor(Math.random()*names.length)]);next();demoTimer=setInterval(next,1700);$('demo').textContent='◼ หยุดเดโมผู้ชม';};
+$('demo').onclick=()=>{if(demoTimer){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='▷ เริ่มเดโมผู้ชม';return;}const names=['แสงดาว','ใจดี','สายบุญ','น้องฟ้า','ต้นกล้า','มะลิ','ปันปัน'];const next=()=>send(offerings[Math.floor(Math.random()*7)].action,names[Math.floor(Math.random()*names.length)]);next();demoTimer=setInterval(next,5000);$('demo').textContent='◼ หยุดเดโมผู้ชม';};
 $('preview-bow').onclick=()=>addPilgrim({name:'ตัวอย่างท่ากราบ',action:'temple',count:1},{preview:true});
 $('preview-ceremony').onclick=()=>showCeremony(1,false,true);
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else $('game-shell').requestFullscreen().catch(()=>$('error').textContent='เปิดลิงก์หน้าจอ OBS เพื่อดูเกมเต็มหน้าได้ค่ะ');};
