@@ -116,24 +116,28 @@ class Controls:
                     event = message.get('event') if 'state' in message else message
                     if not event or event.get('action') not in ACTIONS:
                         continue
-                    if event.get('preview') is True:
-                        continue
-                    self.latest_real_name = str(event.get('name', ''))[:40]
-                    if not self.read_gifts:
-                        continue
-                    name = str(event.get('name', 'ผู้ร่วมกิจกรรม'))[:40]
-                    label = LABELS[game.key][ACTIONS.index(event['action'])]
-                    if game.key == 'curry-shop-3d':
-                        male = getattr(self.speech, 'voice', '') == 'th-TH-NiwatNeural'
-                        ending, soft = ('ครับ', 'นะครับ') if male else ('ค่ะ', 'นะคะ')
-                        text = f'ขอบคุณคุณ{name} ที่มาสั่ง{label}{ending} ทานให้อร่อย{soft} แล้วแวะมาอีก{soft}'
-                    else:
-                        text = f'ขอขอบคุณคุณ{name} ที่ร่วม{label} ขอให้มีความสุข สุขภาพแข็งแรง และครอบครัวอยู่เย็นเป็นสุข'
-                    self.speech.say(text)
+                    self.handle_event(game, event)
             except (OSError, ValueError, http.client.HTTPException):
                 self.closed.wait(.3)
             finally:
                 connection.close()
+
+    def handle_event(self, game, event):
+        preview = event.get('preview') is True
+        if not preview:
+            self.latest_real_name = str(event.get('name', ''))[:40]
+        if not self.read_gifts:
+            return
+        name = str(event.get('name', 'ผู้ร่วมกิจกรรม'))[:40]
+        label = LABELS[game.key][ACTIONS.index(event['action'])]
+        if preview:
+            self.speech.say(f'ทดลองเสียง คุณ{name} {label}', preview=True)
+        elif game.key == 'curry-shop-3d':
+            male = getattr(self.speech, 'voice', '') == 'th-TH-NiwatNeural'
+            ending, soft = ('ครับ', 'นะครับ') if male else ('ค่ะ', 'นะคะ')
+            self.speech.say(f'ขอบคุณคุณ{name} ที่มาสั่ง{label}{ending} ทานให้อร่อย{soft} แล้วแวะมาอีก{soft}')
+        else:
+            self.speech.say(f'ขอขอบคุณคุณ{name} ที่ร่วม{label} ขอให้มีความสุข สุขภาพแข็งแรง และครอบครัวอยู่เย็นเป็นสุข')
 
     def close(self):
         self.closed.set()
@@ -259,7 +263,7 @@ class ControlPanel:
                 speech.enabled = True
             elif not self.loop.get():
                 speech.stop()
-        tk.Checkbutton(voice_row, text='กล่าวขอบคุณเมื่อมีของขวัญ', variable=self.enabled, command=enable,
+        tk.Checkbutton(voice_row, text='อ่านชื่อของขวัญ / เดโม', variable=self.enabled, command=enable,
                        font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e', activebackground=bg,
                        activeforeground=fg).pack(side='left', padx=10)
 
@@ -274,7 +278,7 @@ class ControlPanel:
         self.volume.set(speech.volume * 100)
         self.volume.pack(fill='x', padx=22)
         self.speech_state = text('กดทดลองเสียงเพื่อเริ่มฟัง', 10, '#70e0b3')
-        text('ข้อความและชื่อที่อ่านจะส่งไปยังบริการเสียงออนไลน์ · เสียงออกที่ลำโพงคอม', 9, muted)
+        text('ชื่อเดโมอ่านเมื่อเสียงว่าง · ผู้ส่งจริงมาก่อน · ข้อความส่งไปบริการเสียงออนไลน์ · เสียงออกลำโพงคอม', 9, muted)
         text('ใน LIVE Studio ให้จับเสียงระบบ และปิดเสียงอวยพรจากหน้าเว็บเพื่อไม่ให้พูดซ้ำ', 9, muted)
         text('บทพูดระหว่างไลฟ์', 13)
         self.script = tk.Text(self.body, height=4, font=(font, 11), wrap='word', bg='#162235', fg=fg, insertbackground=fg)

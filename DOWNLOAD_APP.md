@@ -1,10 +1,10 @@
 # ดาวน์โหลดโปรแกรม Windows (.exe)
 
-## [กดที่นี่เพื่อดาวน์โหลดแอปรุ่น 1.3.0](https://github.com/PIXPUP/tiktok-live-games/releases/download/desktop-v1.3.0/TikTokLiveGameDesk-v1.3.0-Windows-x64.zip)
+## [กดที่นี่เพื่อดาวน์โหลดแอปรุ่น 1.3.1](https://github.com/PIXPUP/tiktok-live-games/releases/download/desktop-v1.3.1/TikTokLiveGameDesk-v1.3.1-Windows-x64.zip)
 
 ไฟล์แอปอยู่ใน ZIP ของหน้า Releases ไม่ได้อยู่ในโฟลเดอร์ซอร์ส `desktop` และไม่ได้รวมในปุ่ม Code → Download ZIP
 
-1. ดาวน์โหลดไฟล์ `TikTokLiveGameDesk-v1.3.0-Windows-x64.zip`
+1. ดาวน์โหลดไฟล์ `TikTokLiveGameDesk-v1.3.1-Windows-x64.zip`
 2. คลิกขวา ZIP → Extract All / แตกไฟล์ทั้งหมด
 3. เปิดโฟลเดอร์ที่แตกแล้ว ดับเบิลคลิก `TikTokLiveGameDesk.exe`
 4. เก็บโฟลเดอร์ `_internal` ไว้ข้าง exe
@@ -13,4 +13,4 @@
 
 [ดูหน้าดาวน์โหลดรุ่นล่าสุดและรายการ Assets](https://github.com/PIXPUP/tiktok-live-games/releases/latest)
 
-รุ่น 1.3.0 เพิ่มเกมตักบาตรยามเช้าเป็นเกมที่ 4 พร้อมหน้าควบคุม เดโมทุก 5 วินาที เพลงคลอ และโหมดประหยัด RAM
+รุ่น 1.3.1 แก้การอ่านชื่อเดโมในช่องอ่านชื่อของขวัญ / เดโม ผู้ส่งจริงมีลำดับเสียงก่อนเดโม มีครบสี่เกมรวมตักบาตรยามเช้า

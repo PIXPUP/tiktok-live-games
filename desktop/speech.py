@@ -66,6 +66,7 @@ class Speech:
         self.condition = threading.Condition()
         self.generation, self.closed, self.speaking = 0, False, False
         self.last_finished = 0
+        self.active_preview = False
         self.player = player or Player()
         self.renderer = renderer or self.render
         self.thread = threading.Thread(target=self.worker, daemon=True)
@@ -95,14 +96,22 @@ class Speech:
                     await asyncio.sleep(.5)
         asyncio.run(generate())
 
-    def say(self, text, ambient=False):
+    def say(self, text, ambient=False, preview=False):
         text = str(text).strip()[:1800]
         with self.condition:
             if not self.enabled or not text or self.closed:
                 return False
-            if ambient and (self.speaking or self.pending):
+            if (ambient or preview) and (self.speaking or self.pending):
                 return False
-            self.pending.append((text, self.voice, self.generation))
+            if not ambient and not preview:
+                if self.active_preview:
+                    self.generation += 1
+                    self.pending.clear()
+                    self.active_preview = False
+                    self.player.stop()
+                else:
+                    self.pending = collections.deque((item for item in self.pending if not item[3]), maxlen=8)
+            self.pending.append((text, self.voice, self.generation, preview))
             self.condition.notify()
             return True
 
@@ -118,7 +127,7 @@ class Speech:
                 self.condition.wait_for(lambda: self.pending or self.closed)
                 if self.closed:
                     return
-                text, voice, generation = self.pending.popleft()
+                text, voice, generation, self.active_preview = self.pending.popleft()
                 self.speaking = True
             try:
                 key = hashlib.sha256((voice + '\n' + text).encode()).hexdigest()
@@ -141,6 +150,7 @@ class Speech:
                 if generation == self.generation and self.enabled and not self.closed:
                     self.notify('สร้างเสียงไม่ได้ ลองเลือกเสียงไทย Google หรือตรวจอินเทอร์เน็ตแล้วกดทดลองใหม่ (' + type(error).__name__ + ')')
             finally:
+                self.active_preview = False
                 self.speaking = False
                 self.last_finished = time.monotonic()
 

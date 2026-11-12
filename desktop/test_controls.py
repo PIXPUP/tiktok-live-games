@@ -23,7 +23,7 @@ class QuietSpeech:
         self.messages = []
         self.received = threading.Event()
 
-    def say(self, text):
+    def say(self, text, **kwargs):
         self.messages.append(text)
         self.received.set()
 
@@ -75,12 +75,14 @@ class ControlsTests(unittest.TestCase):
                 self.assertNotIn('ชื่อเดโม', state['players'])
                 # Wait until the event listener has subscribed; retry boundedly if startup races.
                 for attempt in range(15):
+                    speaker.received.clear()
                     controls.send('incense', 'ผู้ชมทดสอบ')
-                    if speaker.received.wait(.2):
+                    speaker.received.wait(.2)
+                    if any('ผู้ชมทดสอบ' in text for text in speaker.messages):
                         break
                 self.assertTrue(speaker.messages)
-                self.assertIn('ผู้ชมทดสอบ', speaker.messages[0])
-                self.assertIn('ถวายดอกไม้', speaker.messages[0])
+                self.assertIn('ผู้ชมทดสอบ', speaker.messages[-1])
+                self.assertIn('ถวายดอกไม้', speaker.messages[-1])
                 self.assertEqual(controls.latest_real_name, 'ผู้ชมทดสอบ')
                 state = json_get(f'http://127.0.0.1:{game.port}/api/state')
                 self.assertIn('ผู้ชมทดสอบ', state['players'])
@@ -88,6 +90,60 @@ class ControlsTests(unittest.TestCase):
             finally:
                 controls.close()
                 manager.close()
+
+    def test_demo_names_are_read_when_checked_without_changing_latest_real_name(self):
+        class FakeManager:
+            active = None
+            def running(self): return False
+        class Recorder(QuietSpeech):
+            def say(self, text, **kwargs): self.messages.append((text, kwargs))
+        speaker = Recorder()
+        controls = Controls(FakeManager(), speaker)
+        try:
+            for game in GAMES:
+                event = {'action':'incense', 'name':'มะลิ', 'preview':True}
+                controls.handle_event(game, event)
+                self.assertFalse(speaker.messages)
+                controls.read_gifts = True
+                controls.latest_real_name = 'ผู้ส่งจริง'
+                controls.handle_event(game, event)
+                text, options = speaker.messages.pop()
+                self.assertIn('มะลิ', text)
+                self.assertIn('ทดลองเสียง', text)
+                self.assertTrue(options['preview'])
+                self.assertEqual(controls.latest_real_name, 'ผู้ส่งจริง')
+                controls.read_gifts = False
+        finally: controls.close()
+
+    def test_real_speech_cancels_demo_and_preserves_multiple_real_names(self):
+        started, finish = threading.Event(), threading.Event()
+        played = []
+        class FakePlayer:
+            def stop(self): pass
+            def play(self, path, volume, cancelled):
+                if not cancelled(): played.append(Path(path).read_text(encoding='utf-8'))
+        def render(text, voice, path):
+            if text == 'demo':
+                started.set()
+                finish.wait(3)
+            Path(path).write_text(text, encoding='utf-8')
+        with tempfile.TemporaryDirectory() as directory:
+            speech = Speech(directory, renderer=render, player=FakePlayer())
+            try:
+                speech.enabled = True
+                self.assertTrue(speech.say('demo', preview=True))
+                self.assertTrue(started.wait(2))
+                self.assertFalse(speech.say('another-demo', preview=True))
+                speech.say('real-one')
+                speech.say('real-two')
+                self.assertFalse(speech.say('late-demo', preview=True))
+                finish.set()
+                deadline = time.monotonic()+3
+                while len(played)<2 and time.monotonic()<deadline: time.sleep(.02)
+                self.assertEqual(played, ['real-one','real-two'])
+            finally:
+                finish.set()
+                speech.close()
 
     def test_cancelling_late_generated_speech_cannot_play(self):
         started, finish, played = threading.Event(), threading.Event(), []
