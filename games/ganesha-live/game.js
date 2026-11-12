@@ -84,8 +84,12 @@ function leaderboardRows(target,limit,ceremony=false){
  }));
  if(!entries.length){const p=document.createElement(ceremony?'div':'li');p.className='empty';p.textContent=ceremony?'ขอบคุณทุกน้ำใจที่ร่วมสร้างแสงสว่าง':'รอผู้ร่วมบุญคนแรก';target.append(p);}
 }
+let lastRenderedKey=null;
 function render(state){
- latestState=state;$('score').textContent=state.score.toLocaleString();
+ const key=JSON.stringify([state.score,state.actions,state.recent]);
+ latestState=state;
+ if(key===lastRenderedKey&&knownCeremony!==null)return;
+ lastRenderedKey=key;$('score').textContent=state.score.toLocaleString();
  const completed=Math.floor(state.actions/100),progress=state.actions%100;
  $('ceremony-progress').textContent=`${progress} / 100`;$('progress').style.width=`${progress}%`;
  $('actions').textContent=`${state.actions.toLocaleString()} ครั้ง`;leaderboardRows($('leaders'),3);
@@ -153,6 +157,7 @@ function offeringEffect(e){
  const label=document.createElement('b');label.textContent=o.label;
  const caption=document.createElement('small');caption.textContent=`${giftName(o)} จาก ${e.name}${e.count>1?' ×'+e.count:''}`;
  card.append(object,label,caption);
+ if(lowPower){if(e.action==='grand'){card.remove();showCeremony(0,true);}return;}
  if(e.action==='incense')for(let i=0;i<5;i++)setTimeout(()=>effectNode('petal',48+Math.random()*10,45,'',2500),i*140);
  if(e.action==='temple')for(let i=0;i<5;i++)setTimeout(()=>effectNode('merit-spark',46+Math.random()*22,52,'✦',2300),i*150);
  if(e.action==='tree')for(let i=0;i<5;i++)setTimeout(()=>effectNode('effect-symbol',45+Math.random()*18,50,'🍎',3300),i*180);

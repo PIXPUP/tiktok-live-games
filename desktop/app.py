@@ -105,6 +105,7 @@ def main():
     from speech import Speech
     from controls import Controls, ControlPanel
     from music import Music
+    from ui_work import update_widget
 
     # A second copy must not compete for ownership of the same game processes.
     mutex = None
@@ -347,29 +348,33 @@ def main():
     label(content, 'เปิดได้ทีละเกม • ปิดแอปจะหยุดเกมและลิงก์ที่แอปนี้เปิดไว้ • v' + VERSION, 9, muted).pack(pady=(3, 8))
 
     def refresh():
-        help_button.configure(text='ยกเลิกการทำงาน' if busy else 'คัดลอกข้อมูลช่วยเหลือ')
+        update_widget(help_button, text='ยกเลิกการทำงาน' if busy else 'คัดลอกข้อมูลช่วยเหลือ')
         active = manager.active
         running = active is not None and manager.running()
         for game in GAMES:
             state, start_button, card = cards[game.key]
             chosen = running and active == game
-            state.configure(text='● กำลังเปิดอยู่' if chosen else '● ปิดอยู่', fg=green if chosen else muted)
-            card.configure(highlightbackground=green if chosen else '#2b3c55')
-            start_button.configure(state='disabled' if busy else 'normal', text='เปิดหน้าควบคุม' if chosen else 'เปิดเกม')
-        active_title.configure(text=('กำลังใช้: ' + active.title) if running else 'ยังไม่ได้เปิดเกม')
+            update_widget(state, text='● กำลังเปิดอยู่' if chosen else '● ปิดอยู่', fg=green if chosen else muted)
+            update_widget(card, highlightbackground=green if chosen else '#2b3c55')
+            update_widget(start_button, state='disabled' if busy else 'normal', text='เปิดหน้าควบคุม' if chosen else 'เปิดเกม')
+        update_widget(active_title, text=('กำลังใช้: ' + active.title) if running else 'ยังไม่ได้เปิดเกม')
         for item in (control_button, screen_button, stop_button, create_button):
-            item.configure(state='normal' if running and not busy else 'disabled')
+            update_widget(item, state='normal' if running and not busy else 'disabled')
         valid_link = bool(manager.public_url) and running and manager.processes.get('tunnel') and manager.processes['tunnel'].poll() is None
         for item in (copy_button, view_button, stop_link_button):
-            item.configure(state='normal' if valid_link and not busy else 'disabled')
-        public.set(manager.public_url if valid_link else 'ยังไม่มีลิงก์ — เปิดเกมแล้วกด «สร้างลิงก์ไลฟ์»')
-        create_button.configure(text='ลิงก์พร้อมแล้ว' if valid_link else 'สร้างลิงก์ไลฟ์')
+            update_widget(item, state='normal' if valid_link and not busy else 'disabled')
+        link_text = manager.public_url if valid_link else 'ยังไม่มีลิงก์ — เปิดเกมแล้วกด «สร้างลิงก์ไลฟ์»'
+        if public.get() != link_text:
+            public.set(link_text)
+        update_widget(create_button, text='ลิงก์พร้อมแล้ว' if valid_link else 'สร้างลิงก์ไลฟ์')
 
     def poll():
         nonlocal busy
         if closing:
             return
-        while not messages.empty():
+        for _ in range(40):
+            if messages.empty():
+                break
             kind, content = messages.get_nowait()
             if kind == 'message':
                 status.set(content)
@@ -391,7 +396,7 @@ def main():
                     messagebox.showerror('ยังทำรายการไม่สำเร็จ', content)
         if not closing:
             refresh()
-            window.after(180, poll)
+            window.after(750, poll)
 
     def health_loop():
         import time

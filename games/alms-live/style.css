@@ -210,3 +210,7 @@ html.live-overlay .stage{border-radius:0;box-shadow:none}
 .lite .monk{filter:none}.lite .monk.companion{display:none}
 
 :root{--monk-atlas:url("/assets/caad40c2a5b59bf486b23f2d8ca7112c5b7d75ef14f6efce01d91d0f48531aac.png")}.alms-food{position:absolute;pointer-events:none}.ritual-object{font-size:46px;line-height:1.2}
+
+/* Lite mode avoids repeated shadow compositing on integrated graphics. */
+.lite .stage,.lite .avatar-name,.lite .ritual-card,.lite .ceremony-banner{box-shadow:none!important}
+.lite .temple-world,.lite .ritual-card{filter:none!important}

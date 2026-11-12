@@ -5,6 +5,7 @@ import random
 import threading
 import time
 import urllib.request
+from ui_work import BackgroundActions, update_widget
 
 ACTIONS = ('incense', 'temple', 'tree', 'fruit', 'lamp', 'lantern', 'bell', 'grand')
 LABELS = {
@@ -86,9 +87,9 @@ class Controls:
         self.demo_thread = threading.Thread(target=run, daemon=True)
         self.demo_thread.start()
 
-    def stop_demo(self):
+    def stop_demo(self, wait=True):
         self.demo_stop.set()
-        if self.demo_thread and self.demo_thread is not threading.current_thread():
+        if wait and self.demo_thread and self.demo_thread is not threading.current_thread():
             self.demo_thread.join(timeout=4.5)
 
     def listen(self):
@@ -152,6 +153,7 @@ class ControlPanel:
         from speech import VOICES
         self.manager, self.controller, self.speech = manager, controller, speech
         self.music = music
+        self.actions = BackgroundActions(notify)
         self.window = tk.Toplevel(parent)
         self.window.title('หน้าควบคุมเกม — TikTok LIVE Game Desk')
         self.window.geometry('820x750')
@@ -217,14 +219,15 @@ class ControlPanel:
         def toggle_demo():
             try:
                 if controller.demo_running:
-                    controller.stop_demo()
+                    controller.stop_demo(wait=False)
                 else:
                     controller.start_demo()
             except Exception as error:
                 notify(str(error))
         self.demo = button(demo_row, 'เปิดเดโม · 5 วิ / 1 คน', toggle_demo)
         self.demo.pack(side='left')
-        button(demo_row, 'หยุดเสียง / ล้างคิว', speech.stop).pack(side='left', padx=8)
+        self.stop_sound = button(demo_row, 'หยุดเสียง / ล้างคิว', lambda: self.actions.submit(speech.stop))
+        self.stop_sound.pack(side='left', padx=8)
         text('เดโมส่งครั้งละ 1 คน · ไม่เพิ่มอันดับจริง · ของขวัญจริงแทรกก่อนเดโม', 9, muted)
         music_row = tk.Frame(self.body, bg=bg)
         music_row.pack(fill='x', padx=22, pady=8)
@@ -233,12 +236,16 @@ class ControlPanel:
                 return
             try:
                 if self.music.running:
+                    notify('กำลังปิดเพลงคลอ…')
                     self.music.stop()
+                    notify('ปิดเพลงคลอแล้ว')
                 else:
+                    notify('กำลังเปิดเพลงคลอ…')
                     self.music.start()
+                    notify('เปิดเพลงคลอแล้ว')
             except Exception:
                 notify('เปิดเพลงไม่ได้ กรุณาตรวจอุปกรณ์เสียงแล้วลองใหม่')
-        self.music_button = button(music_row, 'เปิดเพลงคลอ', toggle_music)
+        self.music_button = button(music_row, 'เปิดเพลงคลอ', lambda: self.actions.submit(toggle_music))
         self.music_button.pack(side='left')
         self.music_volume = tk.Scale(music_row, from_=0, to=70, orient='horizontal',
                                     label='ความดังเพลง', bg=bg, fg=fg, troughcolor='#25364e',
@@ -262,14 +269,14 @@ class ControlPanel:
             if controller.read_gifts:
                 speech.enabled = True
             elif not self.loop.get():
-                speech.stop()
+                self.actions.submit(speech.stop)
         tk.Checkbutton(voice_row, text='อ่านชื่อของขวัญ / เดโม', variable=self.enabled, command=enable,
                        font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e', activebackground=bg,
                        activeforeground=fg).pack(side='left', padx=10)
 
         def preview():
             speech.enabled = True
-            speech.say('ขอให้มีความสุข สุขภาพแข็งแรง และพบเจอแต่สิ่งดีงาม')
+            self.actions.submit(lambda: speech.say('ขอให้มีความสุข สุขภาพแข็งแรง และพบเจอแต่สิ่งดีงาม'))
         button(voice_row, 'ทดลองเสียง', preview).pack(side='right')
         self.volume = tk.Scale(self.body, from_=0, to=100, orient='horizontal',
                                label='ความดังเสียงพูด', bg=bg, fg=fg, troughcolor='#25364e',
@@ -290,7 +297,8 @@ class ControlPanel:
 
         def speak_script():
             speech.enabled = True
-            speech.say(self.script.get('1.0', 'end'))
+            value = self.script.get('1.0', 'end')
+            self.actions.submit(lambda: speech.say(value))
         button(ambient, 'พูดบทนี้', speak_script).pack(side='left')
         self.loop = tk.BooleanVar(value=False)
 
@@ -298,7 +306,8 @@ class ControlPanel:
             if self.loop.get():
                 speech.enabled = True
                 if time.monotonic() - speech.last_finished >= 20:
-                    speech.say(self.script.get('1.0', 'end'), ambient=True)
+                    value = self.script.get('1.0', 'end')
+                    self.actions.submit(lambda: speech.say(value, ambient=True))
                 self.loop_id = self.window.after(1000, loop_tick)
 
         def toggle_loop():
@@ -321,26 +330,27 @@ class ControlPanel:
         game = self.manager.active
         running = game is not None and self.manager.running()
         if self.controller.latest_real_name:
-            self.notice.configure(text='ผู้ส่งของขวัญจริงล่าสุด: '+self.controller.latest_real_name)
+            update_widget(self.notice, text='ผู้ส่งของขวัญจริงล่าสุด: '+self.controller.latest_real_name)
         else:
-            self.notice.configure(text='เปิดเดโมค้างได้ · ของขวัญจริงจะแทรกก่อนเดโม')
-        self.title.configure(text='ควบคุม: ' + game.title if running else 'ยังไม่ได้เปิดเกม')
+            update_widget(self.notice, text='เปิดเดโมค้างได้ · ของขวัญจริงจะแทรกก่อนเดโม')
+        update_widget(self.title, text='ควบคุม: ' + game.title if running else 'ยังไม่ได้เปิดเกม')
         for i, button in enumerate(self.gifts):
-            button.configure(text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')
-        self.demo.configure(text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
+            update_widget(button, text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')
+        update_widget(self.demo, text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
         supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live') and self.music is not None
-        self.music_button.configure(text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
+        update_widget(self.music_button, text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
         if game and self.key != game.key:
             self.key = game.key
             self.script.delete('1.0', 'end')
             self.script.insert('1.0', default_script(game))
-        self.window.after(500, self.refresh)
+        self.window.after(1000, self.refresh)
 
     def show_status(self, message):
         if self.window.winfo_exists():
             self.speech_state.configure(text=message)
 
     def close(self):
+        self.actions.close()
         self.loop.set(False)
         if self.loop_id:
             self.window.after_cancel(self.loop_id)

@@ -189,3 +189,7 @@ html.live-overlay .stage{border-radius:0;box-shadow:none}
 
 .demo-person .avatar-name{opacity:.72}
 .real-person .avatar-name{border-color:#fff0a8;box-shadow:0 0 10px #ffc96585}
+
+/* Lite mode avoids repeated shadow compositing on integrated graphics. */
+.lite .stage,.lite .avatar-name,.lite .ritual-card,.lite .ceremony-banner{box-shadow:none!important}
+.lite .temple-world,.lite .ritual-card{filter:none!important}

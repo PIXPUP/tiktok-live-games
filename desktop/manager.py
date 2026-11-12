@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.3.1'
+VERSION = '1.3.2'
 
 
 def physical_ram_gb():
@@ -149,24 +149,26 @@ class Manager:
                 query.append(('lite', '1'))
             self.public_url = urlunsplit(parts._replace(query=urlencode(query)))
 
-    def prepare(self):
+    def prepare(self, game):
         if getattr(sys, 'frozen', False):
             target = self.data / ('games-' + VERSION)
-            marker = target / '.ready'
+            destination = target / game.key
+            marker = destination / '.ready'
             if not marker.exists():
-                self.notify('กำลังเตรียมเกมครั้งแรก…')
-                shutil.copytree(self.root / 'games', target, dirs_exist_ok=True)
+                self.notify('กำลังเตรียม ' + game.title + ' ครั้งแรก…')
+                shutil.copytree(self.root / 'games' / game.key, destination, dirs_exist_ok=True,
+                                ignore=shutil.ignore_patterns('__pycache__', '*.log', '*.pyc'))
                 previous = sorted((p for p in self.data.glob('games-*') if p.is_dir() and p != target),
                                   key=lambda p: p.stat().st_mtime, reverse=True)
-                if previous:
-                    for game in GAMES:
-                        old = previous[0] / game.key / 'gift-map.json'
-                        try:
-                            mapping = json.loads(old.read_text(encoding='utf-8-sig'))
-                            if isinstance(mapping.get('bindings'), list):
-                                shutil.copy2(old, target / game.key / 'gift-map.json')
-                        except (OSError, ValueError):
-                            pass
+                for directory in previous:
+                    try:
+                        old = directory / game.key / 'gift-map.json'
+                        mapping = json.loads(old.read_text(encoding='utf-8-sig'))
+                        if isinstance(mapping.get('bindings'), list):
+                            shutil.copy2(old, destination / 'gift-map.json')
+                            break
+                    except (OSError, ValueError):
+                        pass
                 marker.write_text(VERSION)
             self.games_dir = target
 
@@ -219,7 +221,7 @@ class Manager:
                 if port_busy(port):
                     raise RuntimeError(f'มีโปรแกรมอื่นใช้ช่อง {port} อยู่ หากเปิดเกมด้วยวิธีเดิมไว้ ให้ปิดก่อน แล้วกดลองใหม่')
             self.cancel.clear()
-            self.prepare()
+            self.prepare(game)
             directory = self.games_dir / game.key
             node = self.runtime('node')
             self.active = game

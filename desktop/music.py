@@ -74,12 +74,11 @@ class Music:
             self.gain = gain
 
     def set_volume(self, value):
-        with self.lock:
-            self.volume = max(0, min(1, float(value)))
-            self.apply_gain()
+        # Slider callbacks must never wait for a slow Windows audio device.
+        self.volume = max(0, min(1, float(value)))
 
     def watch(self):
-        while not self.closed.wait(.12):
+        while not self.closed.wait(.25):
             with self.lock:
                 if self.running:
                     try:
