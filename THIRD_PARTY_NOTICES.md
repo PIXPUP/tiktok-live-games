@@ -30,3 +30,7 @@ Desktop 1.1.0 adds edge-tts (https://github.com/rany2/edge-tts, LGPL-3.0) and it
 The default Thai online voice uses gTTS (https://gtts.readthedocs.io/, MIT) to access Google Translate TTS. gTTS and dependency license notices are included in the runtime bundle. Google and Microsoft services are not hosted by this application; online speech requires an internet connection and may be rate-limited or unavailable.
 
 The Windows release bundles an unmodified Node.js executable (MIT and included third-party notices), cloudflared (Apache-2.0), and Python with its license. License files are included in `_internal/runtime`. PyInstaller distributes its bootloader under GPL with its distribution exception; see https://pyinstaller.org/en/stable/license.html. Runtime executables are release assets and are not committed as Git source blobs.
+
+## Morning alms game
+
+`games/alms-live` reuses the existing visitor artwork, gift icons and Wat Marp Jan morning chanting recording from `boon-live`. The recording has the same rights limitations described above; inclusion does not establish commercial broadcast permission. New temple background and monk atlas were generated with imagegen; see `games/alms-live/ART_PROMPTS.md`. Background music is the original synthesized music bundled with Game Desk.

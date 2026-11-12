@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.2.1'
+VERSION = '1.3.0'
 
 
 def physical_ram_gb():
@@ -47,6 +47,7 @@ GAMES = (
     Game('boon-live', 'ลานบุญ', 'โบสถ์แดงทอง · กราบพระ · ร่วมศรัทธา', 8765, 8766, 8768, 34),
     Game('ganesha-live', 'พระพิฆเนศ', 'ศาลากลางแจ้ง · ตัวละคร 4 แบบ · บทอวยพร', 8785, 8786, 8788, 9),
     Game('curry-shop-3d', 'ร้านข้าวราดแกง', 'ร้านอาหาร 3D · รับออร์เดอร์ · ลูกค้านั่งโต๊ะ', 8775, 8776, 8778, 12),
+    Game('alms-live', 'ตักบาตรยามเช้า', 'พระเดินรับบาตร · ถวายอาหาร · แสดงชื่อผู้ส่ง', 8795, 8796, 8798, 1),
 )
 
 

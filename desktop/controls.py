@@ -11,12 +11,22 @@ LABELS = {
     'boon-live': ('ตักบาตร', 'ถวายสังฆทาน', 'ถวายผ้าไตร', 'ถวายยา', 'เติมน้ำมัน', 'ถวายพระไตรปิฎก', 'บูรณะโบสถ์', 'ทอดกฐิน'),
     'ganesha-live': ('ถวายดอกไม้', 'ถวายขนมโมทกะ', 'ถวายผลไม้', 'ถวายนม', 'จุดประทีป', 'ถวายธูปหอม', 'บูชาอารตี', 'มหาอารตี'),
     'curry-shop-3d': ('ไข่พะโล้', 'แกงเขียวหวาน', 'ผัดกะเพรา', 'ผัดพริกแกง', 'หมูทอด', 'ข้าวสองอย่าง', 'ชุดอิ่มอร่อย', 'เหมายกร้าน'),
+    'alms-live': ('ถวายข้าวสวย', 'ถวายกับข้าว', 'ถวายผลไม้', 'ถวายน้ำดื่ม', 'ถวายขนม', 'ถวายเครื่องดื่ม', 'ถวายชุดอาหาร', 'ร่วมมหาทาน'),
 }
+ALMS_PRAYER = 'ขออนุโมทนาบุญกับทุกท่านที่มาร่วมตักบาตรยามเช้า ขอให้วันนี้เป็นวันที่ร่มเย็น มีสติ มีกำลังใจ สุขภาพแข็งแรง และครอบครัวอยู่เย็นเป็นสุข ขอบคุณทุกน้ำใจที่ร่วมถวายอาหารแด่พระสงฆ์'
 GANESHA_PRAYER = ('พระพิฆเนศ เทพแห่งความสำเร็จ ประทานพรให้ทุกท่าน ทุกคนทำสิ่งใด ปรารถนาสิ่งใด '
                   'ขอให้สำเร็จ สำเร็จ สำเร็จ เป็นอัศจรรย์ทันตาเห็น และผู้ที่ศรัทธาในองค์พระพิฆเนศ '
                   'ที่ร่วมส่งของขวัญเพื่อบูชา ขอให้ชีวิตต่อจากนี้ไป พบเจอความโชคดี มีความสุข '
                   'เงินทองไหลมากอง นองเต็มบ้าน ด้วยบารมีองค์ท่านที่ดูแล '
                   'ผู้ที่รักและศรัทธาองค์พระพิฆเนศ ด้วยเทอญ')
+
+
+def default_script(game):
+    if game and game.key == 'ganesha-live':
+        return GANESHA_PRAYER
+    if game and game.key == 'alms-live':
+        return ALMS_PRAYER
+    return 'ขอต้อนรับทุกท่าน ขอบคุณที่มาร่วมกิจกรรม ฝากกดติดตามไว้ แล้วกลับมาพบกันอีก ขอให้มีความสุข สุขภาพแข็งแรง'
 
 
 class Controls:
@@ -270,7 +280,7 @@ class ControlPanel:
         self.script = tk.Text(self.body, height=4, font=(font, 11), wrap='word', bg='#162235', fg=fg, insertbackground=fg)
         self.script.pack(fill='both', expand=True, padx=22, pady=3)
         game = manager.active
-        self.script.insert('1.0', GANESHA_PRAYER if game and game.key == 'ganesha-live' else 'ขอต้อนรับทุกท่าน ฝากกดติดตามไว้ แล้วกลับมาพบกันอีก ขอให้มีความสุข สุขภาพแข็งแรง และครอบครัวอยู่เย็นเป็นสุข')
+        self.script.insert('1.0', default_script(game))
         ambient = tk.Frame(self.body, bg=bg)
         ambient.pack(fill='x', padx=22, pady=(6, 16))
 
@@ -314,12 +324,12 @@ class ControlPanel:
         for i, button in enumerate(self.gifts):
             button.configure(text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')
         self.demo.configure(text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
-        supported = running and game.key in ('boon-live', 'ganesha-live') and self.music is not None
+        supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live') and self.music is not None
         self.music_button.configure(text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
         if game and self.key != game.key:
             self.key = game.key
             self.script.delete('1.0', 'end')
-            self.script.insert('1.0', GANESHA_PRAYER if game.key == 'ganesha-live' else 'ขอต้อนรับทุกท่าน ขอบคุณที่มาร่วมกิจกรรม ฝากกดติดตามไว้ แล้วกลับมาพบกันอีก ขอให้มีความสุข สุขภาพแข็งแรง')
+            self.script.insert('1.0', default_script(game))
         self.window.after(500, self.refresh)
 
     def show_status(self, message):

@@ -32,7 +32,7 @@ class ManagerTests(unittest.TestCase):
                     self.assertEqual(manager.processes['game'].pid, before)
                     # Different games must not get a second gift bridge accidentally.
                     with self.assertRaises(RuntimeError):
-                        manager.start(GAMES[(GAMES.index(original) + 1) % 3])
+                        manager.start(GAMES[(GAMES.index(original) + 1) % len(GAMES)])
                     directory = manager.games_dir / game.key
                     if game.key == 'curry-shop-3d':
                         command = manager.service_command('gateway', game.port, game.gateway)

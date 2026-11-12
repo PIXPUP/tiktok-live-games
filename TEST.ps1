@@ -4,7 +4,7 @@ function Invoke-Checked {
     & $Program @Arguments
     if ($LASTEXITCODE -ne 0) { throw "$Program failed with exit code $LASTEXITCODE" }
 }
-foreach ($game in @('boon-live', 'ganesha-live', 'curry-shop-3d')) {
+foreach ($game in @('boon-live', 'ganesha-live', 'alms-live', 'curry-shop-3d')) {
     Push-Location (Join-Path $PSScriptRoot "games\$game")
     try {
         Write-Host "Testing $game"
