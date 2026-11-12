@@ -33,6 +33,8 @@ try {
             Copy-Item -Path (Join-Path $licenseSource '*') -Destination $licenseTarget -Recurse -Force
         }
     }
+    python desktop/bundle_gift_icons.py
+    if ($LASTEXITCODE -ne 0) { throw 'Gift icon bundling failed' }
     $env:PYTHONPATH = Join-Path $root '.build-tools'
     python -m PyInstaller --noconfirm --onedir --windowed --name TikTokLiveGameDesk `
         --add-data 'games:games' --add-data 'runtime:runtime' --add-data 'desktop/bridge.mjs:desktop' `
@@ -42,7 +44,7 @@ try {
         --copy-metadata edge-tts --hidden-import gtts --copy-metadata gTTS --collect-data certifi desktop/app.py
     if ($LASTEXITCODE -ne 0) { throw 'Desktop build failed' }
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'QUICK_START.txt') -Destination (Join-Path $root 'dist/TikTokLiveGameDesk/READ_ME_FIRST.txt') -Force
-    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.3.2-Windows-x64.zip'
+    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.3.3-Windows-x64.zip'
     Compress-Archive -Path (Join-Path $root 'dist/TikTokLiveGameDesk') -DestinationPath $archive -Force
     Write-Host "Built: $archive"
 } finally { Pop-Location }
