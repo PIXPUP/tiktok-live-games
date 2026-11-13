@@ -31,3 +31,9 @@ test('a delayed audio start cannot restart music after Stop',async()=>{
  class Audio{constructor(){audio=this;}addEventListener(){}play(){return new Promise(r=>finish=r);}pause(){this.paused=true;}}
  const music=player(Audio);const pending=music.start();music.stop();finish();await pending;assert.equal(music.getState().running,false);assert.equal(audio.paused,true);
 });
+
+test('late completion of an old start cannot pause a newer playback',async()=>{
+ const finishes=[];let audio;
+ class Audio{constructor(){audio=this;}addEventListener(){}play(){this.paused=false;return new Promise(r=>finishes.push(r));}pause(){this.paused=true;}}
+ const music=player(Audio);const first=music.start();music.stop();const second=music.start();finishes[1]();await second;finishes[0]();await first;assert.equal(music.getState().running,true);assert.equal(audio.paused,false);
+});

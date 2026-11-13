@@ -434,7 +434,7 @@ function createOriginalMusic({onStatus=()=>{}}){
  return {
   async start(){if(running||starting)return;const id=++operation;starting=true;report('กำลังเปิดเพลงสามช่า…');try{
    if(!audio){audio=new Audio('/dance-music.wav');audio.loop=true;audio.preload='none';audio.addEventListener('error',()=>{++operation;running=false;starting=false;report('โหลดเพลงไม่สำเร็จ กรุณากดเปิดใหม่');});}
-   gain();await audio.play();if(id!==operation){audio.pause();return;}running=true;starting=false;report('กำลังเล่น · รำวงสามช่าต้นฉบับ 120 BPM');return true;
+   gain();await audio.play();if(id!==operation){if(!running&&!starting)audio.pause();return;}running=true;starting=false;report('กำลังเล่น · รำวงสามช่าต้นฉบับ 120 BPM');return true;
   }catch{if(id===operation){running=false;starting=false;report('กดเปิดเพลงอีกครั้งจากหน้าที่ใช้ส่งเสียง');}return false;}},
   stop(){++operation;running=false;starting=false;audio?.pause();report('ปิดเพลงอยู่');},
   configure(settings){if(settings.volume!==undefined)volume=Math.max(0,Math.min(.7,Number(settings.volume)||0));if(settings.autoDuck!==undefined)autoDuck=Boolean(settings.autoDuck);gain();},
