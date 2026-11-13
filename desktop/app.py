@@ -191,7 +191,7 @@ def main():
             music.stop()
             manager.stop()
             manager.start(game)
-            music.path = (ROOT / 'games' / 'ramwong-live' / 'dance-music.mp3') if game.key == 'ramwong-live' else music_path
+            music.path = (ROOT / 'games' / 'ramwong-live' / 'dance-native.wav') if game.key == 'ramwong-live' else music_path
         work(start, lambda _: open_controls())
 
     def open_controls():

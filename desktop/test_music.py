@@ -39,7 +39,7 @@ class MusicTests(unittest.TestCase):
 
     def test_missing_selected_mp3_is_not_replaced_with_generated_audio(self):
         with tempfile.TemporaryDirectory() as directory:
-            path=Path(directory)/'dance-music.mp3'
+            path=Path(directory)/'dance-native.wav'
             music=Music(path)
             try:
                 with self.assertRaises(FileNotFoundError): music.start()

@@ -23,6 +23,7 @@ try {
         Move-Item -LiteralPath "$cloudflared.partial" -Destination $cloudflared -Force
     }
     if (-not (Test-Path -LiteralPath (Join-Path $root 'games/ramwong-live/dance-music.mp3'))) { throw 'Ramwong music is missing' }
+    if (-not (Test-Path -LiteralPath (Join-Path $root 'games/ramwong-live/dance-native.wav'))) { throw 'Windows-compatible ramwong music is missing' }
     # The executable is a release asset, never committed as a Git blob.
     python desktop/music.py (Join-Path $runtime 'merit-background.wav')
     if ($LASTEXITCODE -ne 0) { throw 'Music asset build failed' }

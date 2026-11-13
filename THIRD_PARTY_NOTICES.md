@@ -42,3 +42,5 @@ The Windows release bundles an unmodified Node.js executable (MIT and included t
 ## Ramwong music replacement (1.4.2)
 
 The active `games/ramwong-live/dance-music.mp3` is the user-provided file สามซ่า.mp3, copied unchanged. Its broadcast and redistribution rights have not been independently verified. It is not claimed to be the original generated instrumental described for 1.4.0. The earlier synthesized WAV remains as an inactive reference. See the current game MUSIC.md.
+
+For Windows MCI compatibility, desktop playback uses dance-native.wav decoded from the same MP3 at its original 48000 Hz stereo sample rate, without cutting or lossy re-encoding. The decoded PCM hash matches the uploaded track. The web player uses the unchanged original MP3.

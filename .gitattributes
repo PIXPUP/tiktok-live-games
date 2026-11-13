@@ -3,3 +3,5 @@
 *.ps1 text eol=crlf
 *.png binary
 *.mp3 binary
+
+*.wav binary
