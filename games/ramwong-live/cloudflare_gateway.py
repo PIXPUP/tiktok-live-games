@@ -46,7 +46,7 @@ class EventJournal:
                     'cursor': next_cursor, 'state': self.state, 'events': events}
 
 JOURNAL = EventJournal()
-FILES = {'/dance-music.wav': 'audio/wav', '/': 'text/html', '/index.html': 'text/html', '/style.css': 'text/css',
+FILES = {'/dance-music.mp3': 'audio/mpeg', '/dance-music.wav': 'audio/wav', '/': 'text/html', '/index.html': 'text/html', '/style.css': 'text/css',
          '/game.js': 'text/javascript', '/temple-bg.png': 'image/png',
          '/pilgrim.png': 'image/png'}
 

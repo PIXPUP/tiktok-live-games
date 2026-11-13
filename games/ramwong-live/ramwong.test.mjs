@@ -20,10 +20,10 @@ test('pair gifts bring two dancers and grand gifts respect the low-power visual 
 function player(Audio){
  const ctx={Audio};vm.createContext(ctx);return vm.runInContext(source.split('/* ORIGINAL MUSIC ENGINE START */')[1].split('/* ORIGINAL MUSIC ENGINE END */')[0]+';createOriginalMusic;',ctx)({});
 }
-test('original cha-cha track loops, ducks for the host, restores volume and stops',async()=>{
+test('selected MP3 loops, ducks for the host, restores volume and stops',async()=>{
  let audio;
  class Audio{constructor(src){this.src=src;audio=this;}addEventListener(){}async play(){this.playing=true;}pause(){this.playing=false;}}
- const music=player(Audio);await music.start();assert.equal(audio.src,'/dance-music.wav');assert.equal(audio.loop,true);assert.equal(audio.playing,true);
+ const music=player(Audio);await music.start();assert.equal(audio.src,'/dance-music.mp3');assert.equal(audio.loop,true);assert.equal(audio.playing,true);
  music.configure({volume:.5});music.duck(true);assert.equal(audio.volume,.1);music.duck(false);assert.equal(audio.volume,.5);music.stop();assert.equal(audio.playing,false);assert.equal(music.getState().running,false);
 });
 test('a delayed audio start cannot restart music after Stop',async()=>{

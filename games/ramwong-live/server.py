@@ -56,7 +56,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         files = {'/': 'index.html', '/index.html': 'index.html', '/style.css': 'style.css',
                  '/game.js': 'game.js', '/temple-bg.png': 'temple-bg.png',
-                 '/pilgrim.png': 'pilgrim.png', '/dance-music.wav': 'dance-music.wav'}
+                 '/pilgrim.png': 'pilgrim.png', '/dance-music.wav': 'dance-music.wav', '/dance-music.mp3': 'dance-music.mp3'}
         if re.fullmatch(r'/assets/[a-f0-9]{64}\.(?:png|webp|jpg|mp3)', path):
             files[path] = path.lstrip('/')
         if path not in files:

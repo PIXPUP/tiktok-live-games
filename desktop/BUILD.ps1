@@ -22,8 +22,7 @@ try {
         Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile "$cloudflared.partial" -UseBasicParsing
         Move-Item -LiteralPath "$cloudflared.partial" -Destination $cloudflared -Force
     }
-    python desktop/ramwong_music.py (Join-Path $root 'games/ramwong-live/dance-music.wav')
-    if ($LASTEXITCODE -ne 0) { throw 'Ramwong music build failed' }
+    if (-not (Test-Path -LiteralPath (Join-Path $root 'games/ramwong-live/dance-music.mp3'))) { throw 'Ramwong music is missing' }
     # The executable is a release asset, never committed as a Git blob.
     python desktop/music.py (Join-Path $runtime 'merit-background.wav')
     if ($LASTEXITCODE -ne 0) { throw 'Music asset build failed' }
@@ -46,7 +45,7 @@ try {
         --copy-metadata edge-tts --hidden-import gtts --copy-metadata gTTS --collect-data certifi desktop/app.py
     if ($LASTEXITCODE -ne 0) { throw 'Desktop build failed' }
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'QUICK_START.txt') -Destination (Join-Path $root 'dist/TikTokLiveGameDesk/READ_ME_FIRST.txt') -Force
-    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.4.1-Windows-x64.zip'
+    $archive = Join-Path $root 'dist/TikTokLiveGameDesk-v1.4.2-Windows-x64.zip'
     Compress-Archive -Path (Join-Path $root 'dist/TikTokLiveGameDesk') -DestinationPath $archive -Force
     Write-Host "Built: $archive"
 } finally { Pop-Location }

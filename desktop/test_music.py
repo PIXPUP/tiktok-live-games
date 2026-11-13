@@ -37,6 +37,15 @@ class MusicTests(unittest.TestCase):
             self.assertGreater(max(abs(x) for x in pcm),5000)
             self.assertLess(max(abs(x) for x in pcm),30000)
 
+    def test_missing_selected_mp3_is_not_replaced_with_generated_audio(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'dance-music.mp3'
+            music=Music(path)
+            try:
+                with self.assertRaises(FileNotFoundError): music.start()
+                self.assertFalse(path.exists())
+            finally: music.close()
+
     def test_music_volume_ducks_for_voice_and_stop_closes_only_music(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'exists.wav'

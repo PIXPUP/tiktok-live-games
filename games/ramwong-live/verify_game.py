@@ -44,9 +44,9 @@ try:
         with get(asset) as response:
             assert response.headers['Content-Type'] == 'image/png'
             assert response.read(8) == b'\x89PNG\r\n\x1a\n'
-    with get('/dance-music.wav') as response:
-        assert response.headers['Content-Type'] == 'audio/wav'
-        assert response.read(12)[8:12] == b'WAVE'
+    with get('/dance-music.mp3') as response:
+        assert response.headers['Content-Type'] == 'audio/mpeg'
+        assert response.read(3) == b'ID3'
     with get('/api/events') as stream:
         initial = json.loads(stream.readline().decode()[6:])
         assert initial['state']['score'] == 0

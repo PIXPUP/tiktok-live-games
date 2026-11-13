@@ -57,6 +57,8 @@ class Music:
             if self.running:
                 return
             if not self.path.exists():
+                if self.path.suffix.lower() == '.mp3':
+                    raise FileNotFoundError('ไม่พบไฟล์เพลงที่เลือก กรุณาแตก ZIP โปรแกรมให้ครบ')
                 if self.path.name == 'dance-music.wav':
                     from ramwong_music import render_ramwong
                     render_ramwong(self.path)
