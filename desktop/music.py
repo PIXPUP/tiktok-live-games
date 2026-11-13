@@ -57,7 +57,11 @@ class Music:
             if self.running:
                 return
             if not self.path.exists():
-                render_music(self.path)
+                if self.path.name == 'dance-music.wav':
+                    from ramwong_music import render_ramwong
+                    render_ramwong(self.path)
+                else:
+                    render_music(self.path)
             try:
                 self.player.command(f'open "{self.path.resolve()}" type mpegvideo alias desk_music')
                 self.running = True

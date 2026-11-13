@@ -20,6 +20,23 @@ class MusicTests(unittest.TestCase):
             self.assertGreater(max(samples), 1000)
             self.assertLess(max(abs(value) for value in samples), 32767)
 
+    def test_original_ramwong_loop_is_small_full_length_and_has_a_clean_seam(self):
+        import array
+        from ramwong_music import render_ramwong
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'dance-music.wav'
+            render_ramwong(path)
+            self.assertLess(path.stat().st_size,2_000_000)
+            with wave.open(str(path)) as audio:
+                self.assertEqual(audio.getframerate(),22050)
+                self.assertEqual(audio.getnchannels(),1)
+                self.assertAlmostEqual(audio.getnframes()/audio.getframerate(),32)
+                pcm=array.array('h',audio.readframes(audio.getnframes()))
+            self.assertEqual(pcm[0],0)
+            self.assertEqual(pcm[-1],0)
+            self.assertGreater(max(abs(x) for x in pcm),5000)
+            self.assertLess(max(abs(x) for x in pcm),30000)
+
     def test_music_volume_ducks_for_voice_and_stop_closes_only_music(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'exists.wav'

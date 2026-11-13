@@ -184,6 +184,7 @@ def main():
             music.stop()
             manager.stop()
             manager.start(game)
+            music.path = (ROOT / 'games' / 'ramwong-live' / 'dance-music.wav') if game.key == 'ramwong-live' else music_path
         work(start, lambda _: open_controls())
 
     def open_controls():
@@ -284,12 +285,12 @@ def main():
     row = tk.Frame(content, bg=bg)
     row.pack(fill='x', padx=24)
     for index, game in enumerate(GAMES):
-        card = tk.Frame(row, bg=surface, padx=18, pady=16, highlightthickness=1, highlightbackground='#2b3c55')
-        card.grid(row=0, column=index, sticky='nsew', padx=5)
-        row.columnconfigure(index, weight=1, uniform='card')
+        card = tk.Frame(row, bg=surface, padx=14, pady=10, highlightthickness=1, highlightbackground='#2b3c55')
+        card.grid(row=index//3, column=index%3, sticky='nsew', padx=5, pady=5)
+        row.columnconfigure(index%3, weight=1, uniform='card')
         label(card, f'0{index+1}  /  INTERACTIVE LIVE', 9, green).pack(anchor='w')
         label(card, game.title, 17).pack(anchor='w', pady=(10, 5))
-        label(card, game.description, 10, muted, wraplength=205, justify='left', height=2).pack(anchor='w')
+        label(card, game.description, 10, muted, wraplength=285, justify='left', height=2).pack(anchor='w')
         state = label(card, '● ปิดอยู่', 11, muted)
         state.pack(anchor='w', pady=(13, 8))
         start_button = button(card, 'เปิดเกม', lambda g=game: open_game(g), True)

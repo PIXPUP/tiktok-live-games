@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-for(const game of ['boon-live','ganesha-live','alms-live']){
+for(const game of ['boon-live','ganesha-live','alms-live','ramwong-live']){
  test(`${game}: idle polls skip DOM work, gifts and resets still redraw`,()=>{
   const source=fs.readFileSync(new URL(`../games/${game}/game.js`,import.meta.url),'utf8');
   let writes=0,rankings=0;

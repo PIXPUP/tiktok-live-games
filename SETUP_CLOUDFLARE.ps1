@@ -15,7 +15,7 @@ try {
         Invoke-WebRequest -Uri $downloadUrl -OutFile "$downloadPath.partial" -UseBasicParsing
         Move-Item -LiteralPath "$downloadPath.partial" -Destination $downloadPath -Force
     }
-    foreach ($game in @('boon-live', 'ganesha-live', 'alms-live')) {
+    foreach ($game in @('boon-live', 'ganesha-live', 'alms-live', 'ramwong-live')) {
         $destination = Join-Path $PSScriptRoot "games\$game\bin"
         New-Item -ItemType Directory -Path $destination -Force | Out-Null
         Copy-Item -LiteralPath $downloadPath -Destination (Join-Path $destination 'cloudflared.exe') -Force

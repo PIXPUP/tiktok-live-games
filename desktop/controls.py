@@ -12,6 +12,7 @@ LABELS = {
     'boon-live': ('ตักบาตร', 'ถวายสังฆทาน', 'ถวายผ้าไตร', 'ถวายยา', 'เติมน้ำมัน', 'ถวายพระไตรปิฎก', 'บูรณะโบสถ์', 'ทอดกฐิน'),
     'ganesha-live': ('ถวายดอกไม้', 'ถวายขนมโมทกะ', 'ถวายผลไม้', 'ถวายนม', 'จุดประทีป', 'ถวายธูปหอม', 'บูชาอารตี', 'มหาอารตี'),
     'curry-shop-3d': ('ไข่พะโล้', 'แกงเขียวหวาน', 'ผัดกะเพรา', 'ผัดพริกแกง', 'หมูทอด', 'ข้าวสองอย่าง', 'ชุดอิ่มอร่อย', 'เหมายกร้าน'),
+    'ramwong-live': ('รำวงพื้นฐาน', 'โยกซ้ายขวา', 'หมุนตัว', 'ตบมือ', 'เต้นสามช่า', 'เดินรำรอบวง', 'รำคู่', 'เปิดฟลอร์ใหญ่'),
     'alms-live': ('ถวายข้าวสวย', 'ถวายกับข้าว', 'ถวายผลไม้', 'ถวายน้ำดื่ม', 'ถวายขนม', 'ถวายเครื่องดื่ม', 'ถวายชุดอาหาร', 'ร่วมมหาทาน'),
 }
 ALMS_PRAYER = 'ขออนุโมทนาบุญกับทุกท่านที่มาร่วมตักบาตรยามเช้า ขอให้วันนี้เป็นวันที่ร่มเย็น มีสติ มีกำลังใจ สุขภาพแข็งแรง และครอบครัวอยู่เย็นเป็นสุข ขอบคุณทุกน้ำใจที่ร่วมถวายอาหารแด่พระสงฆ์'
@@ -23,6 +24,8 @@ GANESHA_PRAYER = ('พระพิฆเนศ เทพแห่งความ
 
 
 def default_script(game):
+    if game and game.key == 'ramwong-live':
+        return 'ยินดีต้อนรับทุกท่านสู่ลานรำวง มาสนุกกับเพลงสามช่าไปด้วยกัน ขอบคุณทุกท่านที่ส่งของขวัญมาร่วมเต้น ฝากกดติดตาม แล้วมารำวงด้วยกันอีกนะคะ'
     if game and game.key == 'ganesha-live':
         return GANESHA_PRAYER
     if game and game.key == 'alms-live':
@@ -133,6 +136,8 @@ class Controls:
         label = LABELS[game.key][ACTIONS.index(event['action'])]
         if preview:
             self.speech.say(f'ทดลองเสียง คุณ{name} {label}', preview=True)
+        elif game.key == 'ramwong-live':
+            self.speech.say(f'ขอบคุณคุณ{name} ที่มาร่วม{label} มาสนุกกับเพลงสามช่าไปด้วยกันนะคะ')
         elif game.key == 'curry-shop-3d':
             male = getattr(self.speech, 'voice', '') == 'th-TH-NiwatNeural'
             ending, soft = ('ครับ', 'นะครับ') if male else ('ค่ะ', 'นะคะ')
@@ -337,7 +342,7 @@ class ControlPanel:
         for i, button in enumerate(self.gifts):
             update_widget(button, text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')
         update_widget(self.demo, text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
-        supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live') and self.music is not None
+        supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live', 'ramwong-live') and self.music is not None
         update_widget(self.music_button, text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
         if game and self.key != game.key:
             self.key = game.key

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-for(const game of ['boon-live','ganesha-live','alms-live']){
+for(const game of ['boon-live','ganesha-live','alms-live','ramwong-live']){
  const source=fs.readFileSync(new URL(`../games/${game}/game.js`,import.meta.url),'utf8');
  const pick=vm.runInNewContext(source.split('/* AVATAR PRIORITY START */')[1].split('/* AVATAR PRIORITY END */')[0]+';avatarAdmission;');
  test(`${game}: real gifts replace demos and demos cannot evict real names`,()=>{
