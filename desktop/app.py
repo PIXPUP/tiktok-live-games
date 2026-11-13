@@ -156,6 +156,13 @@ def main():
             result.configure(width=width)
         return result
 
+    def dialog(method, *args, **options):
+        # Owned dialogs must stay above a pinned control panel too.
+        parent = window
+        if control_panel is not None and control_panel.window.winfo_exists() and control_panel.window.state() != 'withdrawn':
+            parent = control_panel.window
+        return method(*args, parent=parent, **options)
+
     def work(function, done=None):
         nonlocal busy
         if busy:
@@ -175,7 +182,7 @@ def main():
         if manager.active == game and manager.running():
             open_controls()
             return
-        if manager.active and not messagebox.askyesno('เปลี่ยนเกม', 'ปิดเกมปัจจุบันและเปิดเกมนี้แทนไหม?\nคะแนน/คิวรอบเดิมจะถูกล้าง และลิงก์ไลฟ์เดิมจะหยุดทำงาน'):
+        if manager.active and not dialog(messagebox.askyesno, 'เปลี่ยนเกม', 'ปิดเกมปัจจุบันและเปิดเกมนี้แทนไหม?\nคะแนน/คิวรอบเดิมจะถูกล้าง และลิงก์ไลฟ์เดิมจะหยุดทำงาน'):
             return
 
         def start():
@@ -193,12 +200,20 @@ def main():
             return
         if control_panel is None or not control_panel.window.winfo_exists():
             control_panel = ControlPanel(window, manager, controller, speech, lambda text: messages.put(('message', text)), music=music)
-        else:
-            control_panel.window.deiconify()
-            control_panel.window.lift()
+        control_panel.show()
+
+    def open_game_page(url):
+        if not url:
+            return
+        # Starting a browser can be slow on older PCs; keep Tk responsive.
+        threading.Thread(target=webbrowser.open, args=(url,), daemon=True).start()
+        def restore_controls():
+            if not closing and control_panel is not None:
+                control_panel.show_if_pinned()
+        window.after(600, restore_controls)
 
     def stop_game():
-        if manager.active and messagebox.askyesno('ปิดเกม', 'ปิดเกมและลิงก์ไลฟ์ไหม?\nคะแนน/คิวรอบนี้จะถูกล้าง'):
+        if manager.active and dialog(messagebox.askyesno, 'ปิดเกม', 'ปิดเกมและลิงก์ไลฟ์ไหม?\nคะแนน/คิวรอบนี้จะถูกล้าง'):
             def stop():
                 controller.stop_demo()
                 speech.stop()
@@ -231,8 +246,8 @@ def main():
                 subprocess.Popen([str(candidate)], cwd=candidate.parent,
                                  creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
                 return
-        if messagebox.askyesno('เปิด TikFinity', 'ถ้าติดตั้ง TikFinity แล้ว กด «ใช่» เพื่อเลือกตัวโปรแกรมครั้งเดียว\nถ้ายังไม่ได้ติดตั้ง กด «ไม่ใช่» เพื่อเปิดหน้าดาวน์โหลด'):
-            path = filedialog.askopenfilename(title='เลือก TikFinity.exe', filetypes=[('TikFinity program', '*.exe')])
+        if dialog(messagebox.askyesno, 'เปิด TikFinity', 'ถ้าติดตั้ง TikFinity แล้ว กด «ใช่» เพื่อเลือกตัวโปรแกรมครั้งเดียว\nถ้ายังไม่ได้ติดตั้ง กด «ไม่ใช่» เพื่อเปิดหน้าดาวน์โหลด'):
+            path = dialog(filedialog.askopenfilename, title='เลือก TikFinity.exe', filetypes=[('TikFinity program', '*.exe')])
             if path:
                 settings_path.write_text(json.dumps({'tikfinity': path}), encoding='utf-8')
                 launch_tikfinity()
@@ -240,7 +255,7 @@ def main():
             webbrowser.open('https://tikfinity.zerody.one/')
 
     def help_user():
-        messagebox.showinfo('เริ่มไลฟ์ใน 4 ขั้นตอน',
+        dialog(messagebox.showinfo, 'เริ่มไลฟ์ใน 4 ขั้นตอน',
             '1. เลือกเกมแล้วกดเปิดเกม หน้าควบคุมจะเปิดให้\n'
             '2. เปิด TikFinity ใส่ @ ของผู้ไลฟ์ เริ่ม LIVE แล้วกด Connect\n'
             '3. กดสร้างลิงก์ไลฟ์ → คัดลอกลิงก์ → วางใน LIVE Studio (1080 × 1920)\n'
@@ -306,9 +321,9 @@ def main():
     controls.pack(fill='x')
     control_button = button(controls, 'หน้าควบคุมในโปรแกรม', open_controls)
     control_button.pack(side='left', padx=(0, 7))
-    screen_button = button(controls, 'หน้าจอไลฟ์ในเครื่อง', lambda: webbrowser.open(manager.control_url() + '&overlay=1') if manager.active else None)
+    screen_button = button(controls, 'หน้าจอไลฟ์ในเครื่อง', lambda: open_game_page(manager.control_url() + '&overlay=1') if manager.active else None)
     screen_button.pack(side='left', padx=(0, 7))
-    button(controls, 'ตั้งค่าเว็บเพิ่มเติม', lambda: webbrowser.open(manager.control_url()) if manager.active else None).pack(side='left', padx=(0, 7))
+    button(controls, 'ตั้งค่าเว็บเพิ่มเติม', lambda: open_game_page(manager.control_url()) if manager.active else None).pack(side='left', padx=(0, 7))
     stop_button = button(controls, 'ปิดเกม', stop_game)
     stop_button.pack(side='right')
 
@@ -324,7 +339,7 @@ def main():
     create_button.pack(side='left', padx=(0, 7))
     copy_button = button(link_controls, 'คัดลอกลิงก์', copy_link)
     copy_button.pack(side='left', padx=(0, 7))
-    view_button = button(link_controls, 'เปิดลิงก์', lambda: webbrowser.open(manager.public_url))
+    view_button = button(link_controls, 'เปิดลิงก์', lambda: open_game_page(manager.public_url))
     view_button.pack(side='left')
     stop_link_button = button(link_controls, 'ปิดลิงก์', lambda: work(manager.stop_public))
     stop_link_button.pack(side='right')
@@ -394,7 +409,7 @@ def main():
                 busy = False
                 status.set(content)
                 if content != 'ยกเลิกแล้ว':
-                    messagebox.showerror('ยังทำรายการไม่สำเร็จ', content)
+                    dialog(messagebox.showerror, 'ยังทำรายการไม่สำเร็จ', content)
         if not closing:
             refresh()
             window.after(750, poll)
@@ -408,12 +423,14 @@ def main():
     def on_close():
         nonlocal closing
         if busy:
-            if not messagebox.askyesno('ยกเลิกและออก', 'ยกเลิกงานที่กำลังทำและออกจากแอปไหม?'):
+            if not dialog(messagebox.askyesno, 'ยกเลิกและออก', 'ยกเลิกงานที่กำลังทำและออกจากแอปไหม?'):
                 return
             manager.cancel.set()
-        if manager.active and not messagebox.askyesno('ออกจากแอป', 'ปิดเกมและลิงก์ไลฟ์ แล้วออกจากแอปไหม?'):
+        if manager.active and not dialog(messagebox.askyesno, 'ออกจากแอป', 'ปิดเกมและลิงก์ไลฟ์ แล้วออกจากแอปไหม?'):
             return
         closing = True
+        if control_panel is not None and control_panel.window.winfo_exists():
+            control_panel.window.withdraw()
         window.withdraw()
 
         shutdown_done = threading.Event()

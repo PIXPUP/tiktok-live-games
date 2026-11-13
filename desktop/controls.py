@@ -164,7 +164,9 @@ class ControlPanel:
         self.window.geometry('820x750')
         self.window.minsize(760, 640)
         self.window.configure(bg='#0b1320')
-        self.window.transient(parent)
+        # Independent control window remains available when the launcher is minimized.
+        self.pinned = tk.BooleanVar(value=getattr(controller, 'pin_controls', True))
+        self.window.attributes('-topmost', self.pinned.get())
         self.window.protocol('WM_DELETE_WINDOW', self.close)
         self.loop_id = None
         bg, fg, muted = '#0b1320', '#f0f5fb', '#a9bdd3'
@@ -195,6 +197,10 @@ class ControlPanel:
 
         self.title = text('หน้าควบคุมเกม', 20)
         text('ทำงานในโปรแกรมนี้ · ไม่ต้องเปิดหน้าควบคุมใน Chrome', 10, muted)
+        self.pin_button = tk.Checkbutton(self.body, text='ปักหน้าควบคุมไว้ด้านบน', variable=self.pinned,
+                                        command=self.apply_pin, font=(font, 11), bg=bg, fg=fg,
+                                        selectcolor='#25364e', activebackground=bg, activeforeground=fg)
+        self.pin_button.pack(anchor='w', padx=22, pady=4)
         name_row = tk.Frame(self.body, bg=bg)
         name_row.pack(fill='x', padx=22, pady=8)
         tk.Label(name_row, text='ชื่อผู้ชมทดลอง', font=(font, 11), bg=bg, fg=fg).pack(side='left', padx=(0, 12))
@@ -328,6 +334,23 @@ class ControlPanel:
         self.notify = notify
         self.key = None
         self.refresh()
+
+    def apply_pin(self):
+        value = bool(self.pinned.get())
+        self.controller.pin_controls = value
+        self.window.attributes('-topmost', value)
+        if value:
+            self.window.lift()
+
+    def show(self):
+        if self.window.winfo_exists():
+            self.window.deiconify()
+            self.apply_pin()
+            self.window.lift()
+
+    def show_if_pinned(self):
+        if self.window.winfo_exists() and self.pinned.get():
+            self.show()
 
     def refresh(self):
         if not self.window.winfo_exists():
