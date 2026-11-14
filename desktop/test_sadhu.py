@@ -54,10 +54,10 @@ class SadhuTests(unittest.TestCase):
             speech=Speech(d,renderer=render,player=Player());speech.enabled=True
             try:
                 speech.say('chat-active',chat=True);self.assertTrue(started.wait(2))
-                for i in range(4):self.assertTrue(speech.say('chat-'+str(i),chat=True))
+                for i in range(8):self.assertTrue(speech.say('chat-'+str(i),chat=True))
                 self.assertFalse(speech.say('chat-overflow',chat=True))
                 speech.say('gift-one');speech.say('gift-two');release.set()
                 deadline=time.monotonic()+3
-                while len(played)<6 and time.monotonic()<deadline:time.sleep(.02)
-                self.assertEqual(played,['gift-one','gift-two','chat-0','chat-1','chat-2','chat-3'])
+                while len(played)<10 and time.monotonic()<deadline:time.sleep(.02)
+                self.assertEqual(played,['gift-one','gift-two']+['chat-'+str(i) for i in range(8)])
             finally:release.set();speech.close()

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.5.0'
+VERSION = '1.5.1'
 
 
 def physical_ram_gb():

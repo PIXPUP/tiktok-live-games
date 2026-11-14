@@ -39,6 +39,7 @@ class Controls:
         self.interval, self.demo_stop = interval, threading.Event()
         self.read_gifts = False
         self.read_sadhu = False
+        self.short_names = bool(getattr(manager, 'low_memory', False))
         self.latest_sadhu_name = None
         self.sadhu_seen = {}
         self.latest_real_name = None
@@ -146,11 +147,13 @@ class Controls:
         previous = self.sadhu_seen.get(identity)
         if previous is not None and now - previous < 30:
             return
+        accepted = self.speech.say(f'สาธุคุณ{name}' if self.short_names else f'สาธุคุณ{name} ขออนุโมทนาบุญด้วย ขอให้มีความสุข สุขภาพแข็งแรง', chat=True)
+        if accepted is False:
+            return
         self.sadhu_seen.pop(identity, None)
         self.sadhu_seen[identity] = now
         if len(self.sadhu_seen) > 500:
             self.sadhu_seen.pop(next(iter(self.sadhu_seen)))
-        self.speech.say(f'สาธุคุณ{name} ขออนุโมทนาบุญด้วย ขอให้มีความสุข สุขภาพแข็งแรง', chat=True)
 
     def handle_event(self, game, event):
         preview = event.get('preview') is True
@@ -162,6 +165,9 @@ class Controls:
         label = LABELS[game.key][ACTIONS.index(event['action'])]
         if preview:
             self.speech.say(f'ทดลองเสียง คุณ{name} {label}', preview=True)
+        elif self.short_names:
+            greeting = 'ขอบคุณคุณ' if game.key in ('ramwong-live','curry-shop-3d') else 'อนุโมทนาคุณ'
+            self.speech.say(greeting + name)
         elif game.key == 'ramwong-live':
             self.speech.say(f'ขอบคุณคุณ{name} ที่มาร่วม{label} มาสนุกกับเพลงสามช่าไปด้วยกันนะคะ')
         elif game.key == 'curry-shop-3d':
@@ -332,7 +338,7 @@ class ControlPanel:
             self.actions.submit(lambda: speech.say(f'ทดลองเสียง สาธุคุณ{name} ขออนุโมทนาบุญด้วย'))
         self.sadhu_test = button(self.body, 'ทดลองอ่านชื่อสาธุ', test_sadhu)
         self.sadhu_test.pack(anchor='w', padx=22, pady=4)
-        self.sadhu_notice = text('คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 4 ชื่อ · ของขวัญจริงมาก่อน', 9, muted)
+        self.sadhu_notice = text('คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 8 ชื่อ · ของขวัญจริงมาก่อน', 9, muted)
         self.volume = tk.Scale(self.body, from_=0, to=100, orient='horizontal',
                                label='ความดังเสียงพูด', bg=bg, fg=fg, troughcolor='#25364e',
                                highlightthickness=0, font=(font, 10),
@@ -340,6 +346,14 @@ class ControlPanel:
         self.volume.set(speech.volume * 100)
         self.volume.pack(fill='x', padx=22)
         self.speech_state = text('กดทดลองเสียงเพื่อเริ่มฟัง', 10, '#70e0b3')
+        self.short_enabled = tk.BooleanVar(value=getattr(controller, 'short_names', False))
+        self.short_button = tk.Checkbutton(self.body, text='อ่านชื่อแบบสั้น · เหมาะกับคอมเก่า', variable=self.short_enabled,
+                                          command=lambda: setattr(controller, 'short_names', self.short_enabled.get()),
+                                          font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e', activebackground=bg, activeforeground=fg)
+        self.short_button.pack(anchor='w', padx=22, pady=4)
+        self.queue_state = text('คิวเสียงพร้อม', 9, muted)
+        self.retry_voice = button(self.body, 'ลองอ่านชื่อที่ไม่สำเร็จ', lambda: self.actions.submit(speech.retry_last))
+        self.retry_voice.pack(anchor='w', padx=22, pady=4)
         text('ชื่อเดโมอ่านเมื่อเสียงว่าง · ผู้ส่งจริงมาก่อน · ข้อความส่งไปบริการเสียงออนไลน์ · เสียงออกลำโพงคอม', 9, muted)
         text('ใน LIVE Studio ให้จับเสียงระบบ และปิดเสียงอวยพรจากหน้าเว็บเพื่อไม่ให้พูดซ้ำ', 9, muted)
         text('บทพูดระหว่างไลฟ์', 13)
@@ -411,8 +425,11 @@ class ControlPanel:
         update_widget(self.demo, text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
         update_widget(self.sadhu_button, state='normal' if running and game.key == 'boon-live' else 'disabled')
         update_widget(self.sadhu_test, state='normal' if running and game.key == 'boon-live' else 'disabled')
+        summary = self.speech.snapshot() if hasattr(self.speech, 'snapshot') else {}
+        update_widget(self.queue_state, text=f"{summary.get('stage','พร้อม')} · รอ {summary.get('queued',0)} ข้อความ · ลองซ้ำ {summary.get('retried',0)} · ไม่สำเร็จ {summary.get('failed',0)} · คิวเต็ม {summary.get('rejected',0)} · รวมซ้ำ {summary.get('merged',0)}")
+        update_widget(self.retry_voice, state='normal' if summary.get('failed_text') else 'disabled')
         last_sadhu = getattr(self.controller, 'latest_sadhu_name', None)
-        update_widget(self.sadhu_notice, text=('สาธุล่าสุด: '+last_sadhu) if last_sadhu else 'คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 4 ชื่อ · ของขวัญจริงมาก่อน')
+        update_widget(self.sadhu_notice, text=('สาธุล่าสุด: '+last_sadhu) if last_sadhu else 'คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 8 ชื่อ · ของขวัญจริงมาก่อน')
         supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live', 'ramwong-live') and self.music is not None
         update_widget(self.music_button, text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
         if game and self.key != game.key:

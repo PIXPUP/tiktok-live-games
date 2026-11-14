@@ -65,6 +65,7 @@ class ControlsTests(unittest.TestCase):
             speaker = QuietSpeech()
             controls = Controls(manager, speaker)
             controls.read_gifts = True
+            controls.short_names = False
             try:
                 game = dataclasses.replace(GAMES[1], port=port(), bridge=port(), gateway=port())
                 manager.start(game)
