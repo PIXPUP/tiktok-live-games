@@ -5,11 +5,61 @@ import ctypes
 import hashlib
 import json
 import os
+import queue
 import threading
 import time
 from pathlib import Path
 
 VOICES = {'เสียงไทย · Google': 'google-th', 'ผู้ชาย · นิวัฒน์': 'th-TH-NiwatNeural'}
+
+
+def _mci_command(command):
+    result = ctypes.create_unicode_buffer(512)
+    code = ctypes.windll.winmm.mciSendStringW(command, result, 512, None)
+    if code:
+        raise OSError('Windows audio playback failed: ' + str(code))
+    return result.value
+
+
+class AudioCommands:
+    """MCI aliases belong to their calling task: use one owner for every call.
+
+    Music's action worker, its volume watcher, and speech cancellation all call
+    this owner, rather than attempting to use an alias from a different thread.
+    """
+    def __init__(self, execute=_mci_command):
+        self.execute = execute
+        self.requests = queue.Queue()
+        self.thread = threading.Thread(target=self.run, daemon=True, name='WindowsAudioOwner')
+        self.thread.start()
+
+    def call(self, command):
+        if threading.current_thread() is self.thread:
+            return self.execute(command)
+        done, outcome = threading.Event(), []
+        self.requests.put((command, done, outcome))
+        done.wait()
+        success, value = outcome[0]
+        if not success: raise value
+        return value
+
+    def run(self):
+        while True:
+            command, done, outcome = self.requests.get()
+            try: outcome.append((True, self.execute(command)))
+            except Exception as error: outcome.append((False, error))
+            finally: done.set()
+
+
+_audio_owner = None
+_audio_owner_lock = threading.Lock()
+
+
+def audio_command(command):
+    global _audio_owner
+    with _audio_owner_lock:
+        if _audio_owner is None: _audio_owner = AudioCommands()
+    return _audio_owner.call(command)
 
 
 def spoken_phrases(text):
@@ -24,11 +74,7 @@ class Player:
         self.lock = threading.RLock()
 
     def command(self, command):
-        result = ctypes.create_unicode_buffer(512)
-        code = ctypes.windll.winmm.mciSendStringW(command, result, 512, None)
-        if code:
-            raise OSError('Windows audio playback failed: ' + str(code))
-        return result.value
+        return audio_command(command)
 
     def stop(self):
         if os.name == 'nt':

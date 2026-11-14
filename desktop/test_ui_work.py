@@ -106,6 +106,9 @@ class UIWorkTests(unittest.TestCase):
                 started.clear();release.clear();finished.clear()
                 button.invoke()
                 self.assertTrue(started.wait(2))
+                if button is panel.music_button:
+                    button.invoke()
+                    self.assertEqual(panel.actions.pending.qsize(),0)
                 heartbeat=threading.Event()
                 panel.window.after(0,heartbeat.set)
                 root.update()

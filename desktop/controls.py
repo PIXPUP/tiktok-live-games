@@ -274,6 +274,7 @@ class ControlPanel:
         text('เดโมส่งครั้งละ 1 คน · ไม่เพิ่มอันดับจริง · ของขวัญจริงแทรกก่อนเดโม', 9, muted)
         music_row = tk.Frame(self.body, bg=bg)
         music_row.pack(fill='x', padx=22, pady=8)
+        self.music_pending = False
         def toggle_music():
             if not self.music:
                 return
@@ -286,9 +287,17 @@ class ControlPanel:
                     notify('กำลังเปิดเพลงคลอ…')
                     self.music.start()
                     notify('เปิดเพลงคลอแล้ว')
-            except Exception:
-                notify('เปิดเพลงไม่ได้ กรุณาตรวจอุปกรณ์เสียงแล้วลองใหม่')
-        self.music_button = button(music_row, 'เปิดเพลงคลอ', lambda: self.actions.submit(toggle_music))
+            except Exception as error:
+                notify('เปิดเพลงไม่ได้: ' + str(error))
+            finally:
+                self.music_pending = False
+        def request_music():
+            # Set on the Tk thread before enqueueing, so double clicks cannot
+            # queue a stop immediately after a slow start.
+            if self.music_pending: return
+            self.music_pending = True
+            if not self.actions.submit(toggle_music): self.music_pending = False
+        self.music_button = button(music_row, 'เปิดเพลงคลอ', request_music)
         self.music_button.pack(side='left')
         self.music_volume = tk.Scale(music_row, from_=0, to=70, orient='horizontal',
                                     label='ความดังเพลง', bg=bg, fg=fg, troughcolor='#25364e',
@@ -296,6 +305,7 @@ class ControlPanel:
                                     command=lambda value: self.music.set_volume(float(value)/100) if self.music else None)
         self.music_volume.set((self.music.volume if self.music else .35)*100)
         self.music_volume.pack(side='left', padx=16)
+        self.music_status = text('ปิดเพลง', 9, muted)
         text('เพลงออกจากโปรแกรม วนให้อัตโนมัติและลดเสียงตอนพูด ไม่ต้องเปิดเพลงซ้ำในหน้าเว็บ', 9, muted)
         text('เสียงพูดภาษาไทยออนไลน์', 16)
         text('ไม่ต้องติดตั้งโมเดลหรือเสียงไทยใน Windows · ต้องใช้อินเทอร์เน็ต', 10, muted)
@@ -431,7 +441,8 @@ class ControlPanel:
         last_sadhu = getattr(self.controller, 'latest_sadhu_name', None)
         update_widget(self.sadhu_notice, text=('สาธุล่าสุด: '+last_sadhu) if last_sadhu else 'คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 8 ชื่อ · ของขวัญจริงมาก่อน')
         supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live', 'ramwong-live') and self.music is not None
-        update_widget(self.music_button, text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
+        update_widget(self.music_button, text='กำลังทำรายการ…' if self.music_pending else ('ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ'), state='normal' if supported and not self.music_pending else 'disabled')
+        update_widget(self.music_status, text=' · '.join(filter(None, (getattr(self.music,'status','ปิดเพลง'), getattr(self.music,'volume_warning',''), getattr(self.music,'error','')))))
         if game and self.key != game.key:
             self.key = game.key
             self.script.delete('1.0', 'end')

@@ -2,6 +2,7 @@
 import array
 import math
 import threading
+import time
 import wave
 from pathlib import Path
 from speech import Player
@@ -49,6 +50,9 @@ class Music:
         self.volume, self.running = .35, False
         self.lock, self.closed = threading.RLock(), threading.Event()
         self.gain = None
+        self.status, self.error, self.volume_warning = 'ปิดเพลง', '', ''
+        self.manual_loop = False
+        self.device_errors = 0
         self.thread = threading.Thread(target=self.watch, daemon=True)
         self.thread.start()
 
@@ -64,19 +68,56 @@ class Music:
                     render_ramwong(self.path)
                 else:
                     render_music(self.path)
-            try:
-                self.player.command(f'open "{self.path.resolve()}" type mpegvideo alias desk_music')
-                self.running = True
-                self.apply_gain()
-                self.player.command('play desk_music repeat')
-            except Exception:
-                self.stop()
-                raise
+            self.error = self.volume_warning = ''
+            for attempt in range(2):
+                self.status = 'กำลังเปิดเพลง…' if attempt == 0 else 'อุปกรณ์เสียงเริ่มช้า กำลังลองใหม่…'
+                self.player.stop()  # Release a stale alias left by an earlier failed start.
+                self.gain = None
+                try:
+                    self.player.command(f'open "{self.path.resolve()}" type mpegvideo alias desk_music')
+                    self.apply_gain(force=True)
+                    self.manual_loop = False
+                    try:
+                        self.player.command('play desk_music repeat')
+                    except OSError:
+                        self.manual_loop = True
+                        self.player.command('play desk_music from 0')
+                    self.wait_started()
+                    self.running = True
+                    self.device_errors = 0
+                    self.status = 'กำลังเล่นเพลง'
+                    return
+                except Exception as error:
+                    self.running = False
+                    self.player.stop()
+                    if self.closed.is_set():
+                        return
+                    if attempt == 0:
+                        if self.closed.wait(.5): return
+                    else:
+                        self.error = str(error)
+                        self.status = 'เปิดเพลงไม่สำเร็จ · กดเปิดเพื่อลองใหม่'
+                        raise
 
-    def apply_gain(self):
+    def wait_started(self):
+        deadline = time.monotonic() + 5
+        while not self.closed.is_set():
+            if self.player.command('status desk_music mode') == 'playing':
+                return
+            if time.monotonic() >= deadline:
+                raise OSError('อุปกรณ์เสียงยังไม่เริ่มเล่นภายใน 5 วินาที')
+            self.closed.wait(.1)
+        raise OSError('ปิดโปรแกรมระหว่างเปิดเพลง')
+
+    def apply_gain(self, force=False):
         gain = round(self.volume * (.2 if self.speaking() else 1) * 1000)
-        if self.running and gain != self.gain:
-            self.player.command('setaudio desk_music volume to ' + str(gain))
+        if (self.running or force) and gain != self.gain:
+            try:
+                self.player.command('setaudio desk_music volume to ' + str(gain))
+                self.volume_warning = ''
+            except OSError as error:
+                # Some older drivers play successfully but reject volume control.
+                self.volume_warning = 'ปรับความดังอัตโนมัติไม่ได้ · ใช้ความดังระบบ (' + str(error) + ')'
             self.gain = gain
 
     def set_volume(self, value):
@@ -89,13 +130,24 @@ class Music:
                 if self.running:
                     try:
                         self.apply_gain()
-                    except OSError:
-                        self.running = False
+                        mode = self.player.command('status desk_music mode')
+                        if mode == 'stopped':
+                            # Also recover when a driver accepts repeat but ignores it.
+                            self.player.command('play desk_music from 0')
+                            self.wait_started()
+                        self.device_errors = 0
+                    except OSError as error:
+                        self.device_errors += 1
+                        if self.device_errors >= 3:
+                            self.error = str(error)
+                            self.stop()
+                            self.status = 'เพลงหยุดจากอุปกรณ์เสียง · กดเปิดเพื่อลองใหม่'
 
     def stop(self):
         with self.lock:
             self.running, self.gain = False, None
             self.player.stop()
+            self.status = 'ปิดเพลง'
 
     def close(self):
         self.closed.set()
