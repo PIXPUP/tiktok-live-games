@@ -38,6 +38,9 @@ class Controls:
         self.manager, self.speech, self.notify = manager, speech, notify
         self.interval, self.demo_stop = interval, threading.Event()
         self.read_gifts = False
+        self.read_sadhu = False
+        self.latest_sadhu_name = None
+        self.sadhu_seen = {}
         self.latest_real_name = None
         self.observed_game = None
         self.demo_thread = None
@@ -103,6 +106,8 @@ class Controls:
                 continue
             if game != self.observed_game:
                 self.latest_real_name = None
+                self.latest_sadhu_name = None
+                self.sadhu_seen.clear()
                 self.observed_game = game
             connection = http.client.HTTPConnection('127.0.0.1', game.port, timeout=20)
             try:
@@ -118,6 +123,9 @@ class Controls:
                         continue
                     message = json.loads(line[6:])
                     event = message.get('event') if 'state' in message else message
+                    if event and event.get('action') == 'sadhu' and game.key == 'boon-live':
+                        self.handle_sadhu(event)
+                        continue
                     if not event or event.get('action') not in ACTIONS:
                         continue
                     self.handle_event(game, event)
@@ -125,6 +133,24 @@ class Controls:
                 self.closed.wait(.3)
             finally:
                 connection.close()
+
+    def handle_sadhu(self, event):
+        name = str(event.get('name', '')).strip()[:40]
+        if not name:
+            return
+        self.latest_sadhu_name = name
+        if not self.read_sadhu:
+            return
+        identity = str(event.get('userId') or name)[:128]
+        now = time.monotonic()
+        previous = self.sadhu_seen.get(identity)
+        if previous is not None and now - previous < 30:
+            return
+        self.sadhu_seen.pop(identity, None)
+        self.sadhu_seen[identity] = now
+        if len(self.sadhu_seen) > 500:
+            self.sadhu_seen.pop(next(iter(self.sadhu_seen)))
+        self.speech.say(f'สาธุคุณ{name} ขออนุโมทนาบุญด้วย ขอให้มีความสุข สุขภาพแข็งแรง', chat=True)
 
     def handle_event(self, game, event):
         preview = event.get('preview') is True
@@ -279,7 +305,7 @@ class ControlPanel:
             controller.read_gifts = self.enabled.get()
             if controller.read_gifts:
                 speech.enabled = True
-            elif not self.loop.get():
+            elif not self.loop.get() and not getattr(controller, 'read_sadhu', False):
                 self.actions.submit(speech.stop)
         tk.Checkbutton(voice_row, text='อ่านชื่อของขวัญ / เดโม', variable=self.enabled, command=enable,
                        font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e', activebackground=bg,
@@ -289,6 +315,24 @@ class ControlPanel:
             speech.enabled = True
             self.actions.submit(lambda: speech.say('ขอให้มีความสุข สุขภาพแข็งแรง และพบเจอแต่สิ่งดีงาม'))
         button(voice_row, 'ทดลองเสียง', preview).pack(side='right')
+        self.sadhu_enabled = tk.BooleanVar(value=getattr(controller, 'read_sadhu', False))
+        def enable_sadhu():
+            controller.read_sadhu = self.sadhu_enabled.get()
+            if controller.read_sadhu:
+                speech.enabled = True
+            elif not controller.read_gifts and not self.loop.get():
+                self.actions.submit(speech.stop)
+        self.sadhu_button = tk.Checkbutton(self.body, text='อ่านชื่อเมื่อพิมพ์สาธุ · เกมลานบุญ', variable=self.sadhu_enabled,
+                                          command=enable_sadhu, font=(font, 11), bg=bg, fg=fg,
+                                          selectcolor='#25364e', activebackground=bg, activeforeground=fg)
+        self.sadhu_button.pack(anchor='w', padx=22, pady=4)
+        def test_sadhu():
+            speech.enabled = True
+            name = self.name.get().strip()[:40] or 'ผู้ชมทดลอง'
+            self.actions.submit(lambda: speech.say(f'ทดลองเสียง สาธุคุณ{name} ขออนุโมทนาบุญด้วย'))
+        self.sadhu_test = button(self.body, 'ทดลองอ่านชื่อสาธุ', test_sadhu)
+        self.sadhu_test.pack(anchor='w', padx=22, pady=4)
+        self.sadhu_notice = text('คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 4 ชื่อ · ของขวัญจริงมาก่อน', 9, muted)
         self.volume = tk.Scale(self.body, from_=0, to=100, orient='horizontal',
                                label='ความดังเสียงพูด', bg=bg, fg=fg, troughcolor='#25364e',
                                highlightthickness=0, font=(font, 10),
@@ -365,6 +409,10 @@ class ControlPanel:
         for i, button in enumerate(self.gifts):
             update_widget(button, text=LABELS[game.key][i] if game else ACTIONS[i], state='normal' if running else 'disabled')
         update_widget(self.demo, text='หยุดเดโม' if self.controller.demo_running else 'เปิดเดโม · 5 วิ / 1 คน', state='normal' if running else 'disabled')
+        update_widget(self.sadhu_button, state='normal' if running and game.key == 'boon-live' else 'disabled')
+        update_widget(self.sadhu_test, state='normal' if running and game.key == 'boon-live' else 'disabled')
+        last_sadhu = getattr(self.controller, 'latest_sadhu_name', None)
+        update_widget(self.sadhu_notice, text=('สาธุล่าสุด: '+last_sadhu) if last_sadhu else 'คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 4 ชื่อ · ของขวัญจริงมาก่อน')
         supported = running and game.key in ('boon-live', 'ganesha-live', 'alms-live', 'ramwong-live') and self.music is not None
         update_widget(self.music_button, text='ปิดเพลงคลอ' if self.music and self.music.running else 'เปิดเพลงคลอ', state='normal' if supported else 'disabled')
         if game and self.key != game.key:

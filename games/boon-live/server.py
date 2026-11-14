@@ -76,27 +76,43 @@ class Handler(BaseHTTPRequestHandler):
             shutil.copyfileobj(source, self.wfile, 65536)
 
     def do_POST(self):
-        if urlparse(self.path).path != '/api/event':
+        route = urlparse(self.path).path
+        is_chat = route == '/api/chat'
+        if route not in ('/api/event', '/api/chat'):
             self.send_error(404)
             return
+        if is_chat:
+            allowed = {f'http://127.0.0.1:{self.server.server_port}', f'http://localhost:{self.server.server_port}'}
+            if self.headers.get('Origin') and self.headers['Origin'] not in allowed:
+                self.send_json(403, {'error': 'Local chat source required'})
+                return
+            if not self.headers.get('Content-Type', '').lower().startswith('application/json'):
+                self.send_json(415, {'error': 'Expected JSON'})
+                return
         try:
             length = int(self.headers.get('Content-Length', 0))
             if not 0 < length <= 4096:
                 raise ValueError('Invalid body size')
             data = json.loads(self.rfile.read(length))
             action = data.get('action')
-            if action not in POINTS:
+            if is_chat and action != 'sadhu':
+                raise ValueError('chat action must be sadhu')
+            if not is_chat and action not in POINTS:
                 raise ValueError('action must be one of: ' + ', '.join(POINTS))
             name = str(data.get('name', 'ผู้ร่วมบุญ')).strip()[:40] or 'ผู้ร่วมบุญ'
             count = data.get('count', 1)
             if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 100:
                 raise ValueError('count must be an integer from 1 to 100')
+            if is_chat and count != 1:
+                raise ValueError('chat count must be 1')
         except (ValueError, TypeError, AttributeError) as e:
             self.send_json(400, {'error': str(e)})
             return
         with lock:
-            event = {'action': action, 'name': name, 'count': count, 'points': POINTS[action] * count}
-            if data.get('preview') is True:
+            event = {'action': action, 'name': name, 'count': count, 'points': 0 if is_chat else POINTS[action] * count}
+            if is_chat:
+                event['userId'] = str(data.get('userId') or name)[:128]
+            elif data.get('preview') is True:
                 event['preview'] = True
                 event['points'] = 0
             else:

@@ -160,6 +160,7 @@ function offeringEffect(e){
  if(e.action==='grand'){card.remove();showCeremony(0,true);sceneEffect('kathin-blessing',8500);}
 }
 function animateEvent(e){
+ if(e.action==='sadhu'){if(Date.now()-lastRealGiftAt>6000)$('toast').textContent=`🙏 คุณ${e.name} ร่วมอนุโมทนาสาธุ`;return;}
  const demo=e.preview===true;if(!demo)lastRealGiftAt=Date.now();const spotlight=!demo||Date.now()-lastRealGiftAt>6000;
  const o=byAction[e.action];if(spotlight)$('toast').textContent=`${demo?'เดโม · ':''}${e.name} · ${giftName(o)} → ${o.label}${e.count>1?' ×'+e.count:''}  +${e.points.toLocaleString()}`;
  for(let i=0;i<Math.min(e.count,lowPower?1:4);i++)setTimeout(()=>addPilgrim(e),i*400);

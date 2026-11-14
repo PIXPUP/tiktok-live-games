@@ -1,6 +1,6 @@
 # ดาวน์โหลดโปรแกรม Windows (.exe)
 
-## [ดาวน์โหลดแอปรุ่น 1.4.2](https://github.com/PIXPUP/tiktok-live-games/releases/download/desktop-v1.4.2/TikTokLiveGameDesk-v1.4.2-Windows-x64.zip)
+## [ดาวน์โหลดแอปรุ่น 1.5.0](https://github.com/PIXPUP/tiktok-live-games/releases/download/desktop-v1.5.0/TikTokLiveGameDesk-v1.5.0-Windows-x64.zip)
 
 ไฟล์แอปอยู่ใน Assets ของหน้า Releases ส่วนโฟลเดอร์ desktop และปุ่ม Code → Download ZIP เป็นซอร์สโค้ด
 
@@ -14,3 +14,5 @@
 หน้าควบคุมปักด้านบนได้ มีโหมดประหยัด RAM และเดโมทุก 5 วินาที ไม่ต้องติดตั้ง Python, Node.js หรือ cloudflared แยก ของขวัญจริงยังใช้ TikFinity Desktop บนคอมเดียวกัน
 
 [ดูรุ่นล่าสุดและรายการ Assets](https://github.com/PIXPUP/tiktok-live-games/releases/latest)
+
+รุ่น 1.5.0 เพิ่มอ่านชื่อคนพิมพ์สาธุในเกมลานบุญ เปิดได้จากช่องอ่านชื่อเมื่อพิมพ์สาธุในหน้าควบคุม

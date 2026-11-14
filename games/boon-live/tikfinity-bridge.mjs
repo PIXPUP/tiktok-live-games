@@ -53,16 +53,36 @@ export class GiftRouter{
  }
 }
 
+export class SadhuRouter{
+ constructor({now=Date.now,cooldown=30000}={}){this.now=now;this.cooldown=cooldown;this.seen=new Map();}
+ route(data){
+  if(!data||typeof data!=='object')return null;
+  const comment=String(data.comment??data.text??data.message??'').slice(0,1000).normalize('NFKC');
+  if(!/สา[\s\u200b-\u200d]*ธุ/u.test(comment))return null;
+  const user=data.user??{};
+  const name=[data.nickname,user.nickname,data.uniqueId,user.uniqueId].find(v=>typeof v==='string'&&v.trim());
+  if(!name)return null;
+  const identity=[data.userId,user.userId,data.uniqueId,user.uniqueId,name].find(v=>v!=null&&String(v).trim()&&String(v)!=='0');
+  const userId=String(identity).slice(0,128);
+  const now=this.now();
+  if(this.seen.has(userId)&&now-this.seen.get(userId)<this.cooldown)return null;
+  this.seen.delete(userId);this.seen.set(userId,now);
+  if(this.seen.size>500)this.seen.delete(this.seen.keys().next().value);
+  return {action:'sadhu',name:name.trim().slice(0,40),userId,count:1};
+ }
+}
+
 export function startBridge(options={}){
  const root=options.root??path.dirname(fileURLToPath(import.meta.url));
  const configPath=path.join(root,'gift-map.json');
  let bindings=DEFAULT_BINDINGS;
  try{bindings=validateBindings(JSON.parse(fs.readFileSync(configPath,'utf8')).bindings);}catch(error){if(error.code!=='ENOENT')console.error('Gift map:',error.message);}
  const router=new GiftRouter(bindings);
+ const sadhuRouter=new SadhuRouter(options.sadhuOptions);
  const gameUrl=options.gameUrl??'http://127.0.0.1:8765';
  const wsUrl=options.wsUrl??'ws://127.0.0.1:21213/';
  const port=options.port??8766;
- const status={connection:'connecting',receivedGifts:0,forwardedEvents:0,unmappedGifts:0,lastGiftAt:null,lastForwardedAt:null,lastError:null,gifts:[],queue:0};
+ const status={connection:'connecting',receivedGifts:0,forwardedEvents:0,unmappedGifts:0,lastGiftAt:null,lastForwardedAt:null,lastError:null,gifts:[],queue:0,receivedSadhu:0};
  let socket,retryTimer,connectTimer,closed=false,draining=false;
  const pending=[];
  function recordGift(gift,kind){
@@ -77,7 +97,7 @@ export function startBridge(options={}){
     const event=pending.shift();status.queue=pending.length;
     // Never automatically retry an uncertain HTTP delivery: it may already have scored.
     try{
-     const response=await fetch(`${gameUrl}/api/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(event),signal:AbortSignal.timeout(5000)});
+     const response=await fetch(`${gameUrl}${event.action==='sadhu'?'/api/chat':'/api/event'}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(event),signal:AbortSignal.timeout(5000)});
      if(!response.ok)throw Error(`HTTP ${response.status}`);
      await response.json();status.forwardedEvents++;status.lastForwardedAt=new Date().toISOString();status.lastError=null;
     }catch(error){status.lastError=`ส่งเข้าเกมไม่สำเร็จ (${error.message}) ไม่ส่งซ้ำอัตโนมัติเพื่อป้องกันคะแนนซ้ำ`;console.error(status.lastError);}
@@ -86,7 +106,13 @@ export function startBridge(options={}){
  }
  function receive(raw){
   try{
-   const envelope=JSON.parse(String(raw));if(envelope.event!=='gift')return;
+   const envelope=JSON.parse(String(raw));
+   if(envelope.event==='chat'){
+    const event=sadhuRouter.route(envelope.data);
+    if(!event||pending.filter(e=>e.action==='sadhu').length>=8)return;
+    status.receivedSadhu++;pending.push(event);status.queue=pending.length;void drain();return;
+   }
+   if(envelope.event!=='gift')return;
    const result=router.route(envelope.data);
    if(!result.gift)return;
    status.lastGiftAt=new Date().toISOString();recordGift(result.gift,result.kind);
@@ -95,7 +121,10 @@ export function startBridge(options={}){
    if(result.kind==='unmapped'){status.unmappedGifts++;return;}
    const chunks=Math.ceil(result.event.count/100);
    if(pending.length+chunks>500){status.lastError='คิวกิจกรรมเต็ม กิจกรรมล่าสุดยังไม่ถูกส่งเข้าเกม';return;}
-   for(let remaining=result.event.count;remaining>0;remaining-=100)pending.push({...result.event,count:Math.min(remaining,100)});
+   for(let remaining=result.event.count;remaining>0;remaining-=100){
+    const event={...result.event,count:Math.min(remaining,100)},chatIndex=pending.findIndex(e=>e.action==='sadhu');
+    if(chatIndex<0)pending.push(event);else pending.splice(chatIndex,0,event);
+   }
    status.queue=pending.length;void drain();
   }catch(error){status.lastError=`อ่าน event ไม่สำเร็จ: ${error.message}`;}
  }

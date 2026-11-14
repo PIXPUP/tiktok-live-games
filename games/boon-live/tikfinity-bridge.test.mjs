@@ -28,8 +28,8 @@ test('gift IDs, legacy payloads, modern nested payloads, unknowns and invalid co
 });
 test('WebSocket gift to game HTTP, count chunking, status and saved mapping',async()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'boon-bridge-test-'));
- const received=[];
- const game=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;received.push(JSON.parse(body));res.setHeader('Content-Type','application/json');res.end('{"ok":true}');});
+ const received=[],routes=[];
+ const game=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;received.push(JSON.parse(body));routes.push(req.url);res.setHeader('Content-Type','application/json');res.end('{"ok":true}');});
  const mock=http.createServer();let wsSocket;
  mock.on('upgrade',(req,socket)=>{
   wsSocket=socket;
@@ -55,6 +55,12 @@ test('WebSocket gift to game HTTP, count chunking, status and saved mapping',asy
   const status=await(await fetch(base+'/status')).json();assert.equal(status.forwardedEvents,3);
   const response=await fetch(base+'/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bindings:DEFAULT_BINDINGS.map(b=>({...b,gift:b.action==='incense'?'5655':b.gift}))})});
   assert.equal(response.status,200);assert.equal(JSON.parse(fs.readFileSync(path.join(root,'gift-map.json'))).bindings[0].gift,'5655');
+  frame({event:'chat',data:{comment:'สาธุค่ะ',user:{nickname:'สายบุญ',userId:'chat-one'}}});
+  await until(()=>bridge.status.forwardedEvents===4);
+  assert.equal(routes[3],'/api/chat');assert.equal(received[3].name,'สายบุญ');assert.equal(received[3].action,'sadhu');assert.equal(bridge.status.receivedSadhu,1);
+  frame({event:'chat',data:{comment:'สาธุ',nickname:'สายบุญ',userId:'chat-one'}});
+  frame({event:'chat',data:{comment:'hello',nickname:'คนอื่น',userId:'chat-two'}});
+  await new Promise(r=>setTimeout(r,60));assert.equal(bridge.status.receivedSadhu,1);
   const denied=await fetch(base+'/config',{method:'POST',headers:{'Content-Type':'application/json','Origin':'https://example.com'},body:'{}'});assert.equal(denied.status,403);
  }finally{
   bridge.close();wsSocket?.destroy();game.close();mock.close();

@@ -67,6 +67,7 @@ class Speech:
         self.generation, self.closed, self.speaking = 0, False, False
         self.last_finished = 0
         self.active_preview = False
+        self.active_chat = False
         self.player = player or Player()
         self.renderer = renderer or self.render
         self.thread = threading.Thread(target=self.worker, daemon=True)
@@ -96,22 +97,29 @@ class Speech:
                     await asyncio.sleep(.5)
         asyncio.run(generate())
 
-    def say(self, text, ambient=False, preview=False):
+    def say(self, text, ambient=False, preview=False, chat=False):
         text = str(text).strip()[:1800]
         with self.condition:
             if not self.enabled or not text or self.closed:
                 return False
             if (ambient or preview) and (self.speaking or self.pending):
                 return False
-            if not ambient and not preview:
-                if self.active_preview:
+            if chat:
+                if len(self.pending) >= 8 or sum(item[4] for item in self.pending) >= 4:
+                    return False
+                self.pending.append((text, self.voice, self.generation, False, True))
+            elif not ambient and not preview:
+                if self.active_preview or self.active_chat:
                     self.generation += 1
-                    self.pending.clear()
-                    self.active_preview = False
+                    self.active_preview = self.active_chat = False
                     self.player.stop()
-                else:
-                    self.pending = collections.deque((item for item in self.pending if not item[3]), maxlen=8)
-            self.pending.append((text, self.voice, self.generation, preview))
+                normal = [(t, v, self.generation, False, False) for t, v, _, demo, comment in self.pending if not demo and not comment]
+                comments = [(t, v, self.generation, False, True) for t, v, _, demo, comment in self.pending if comment]
+                normal.append((text, self.voice, self.generation, False, False))
+                normal = normal[-8:]
+                self.pending = collections.deque(normal + comments[:8-len(normal)], maxlen=8)
+            else:
+                self.pending.append((text, self.voice, self.generation, preview, False))
             self.condition.notify()
             return True
 
@@ -127,7 +135,7 @@ class Speech:
                 self.condition.wait_for(lambda: self.pending or self.closed)
                 if self.closed:
                     return
-                text, voice, generation, self.active_preview = self.pending.popleft()
+                text, voice, generation, self.active_preview, self.active_chat = self.pending.popleft()
                 self.speaking = True
             try:
                 key = hashlib.sha256((voice + '\n' + text).encode()).hexdigest()
@@ -151,6 +159,7 @@ class Speech:
                     self.notify('สร้างเสียงไม่ได้ ลองเลือกเสียงไทย Google หรือตรวจอินเทอร์เน็ตแล้วกดทดลองใหม่ (' + type(error).__name__ + ')')
             finally:
                 self.active_preview = False
+                self.active_chat = False
                 self.speaking = False
                 self.last_finished = time.monotonic()
 
