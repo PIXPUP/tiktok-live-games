@@ -1,0 +1,13 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: SAMEORIGIN
+/game-runtime.js
+  Cache-Control: no-cache
+/portal.js
+  Cache-Control: no-cache
+/games.json
+  Cache-Control: no-cache
+/games/*/assets/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -344,6 +344,33 @@ def main():
     stop_link_button = button(link_controls, 'ปิดลิงก์', lambda: work(manager.stop_public))
     stop_link_button.pack(side='right')
 
+    label(links, 'เว็บไซต์ Pages + Tunnel', 13).pack(anchor='w', pady=(14, 3))
+    pages_base = tk.StringVar(value=manager.pages_base)
+    pages_row = tk.Frame(links, bg=surface)
+    pages_row.pack(fill='x')
+    tk.Entry(pages_row, textvariable=pages_base, bg='#0d1828', fg=green, font=(font, 11), relief='flat').pack(side='left', fill='x', expand=True, ipady=9)
+    def save_pages():
+        try:
+            manager.set_pages_base(pages_base.get())
+            status.set('บันทึกเว็บ Pages แล้ว สร้างลิงก์ไลฟ์ก่อนเปิดจอ Pages')
+        except ValueError as error: status.set(str(error))
+    button(pages_row, 'บันทึกเว็บ', save_pages).pack(side='right', padx=(8, 0))
+    pages_actions = tk.Frame(links, bg=surface)
+    pages_actions.pack(fill='x', pady=(7, 0))
+    def pages_open():
+        if manager.pages_url(): open_game_page(manager.pages_url())
+    def pages_copy():
+        url = manager.pages_url()
+        if url:
+            window.clipboard_clear()
+            window.clipboard_append(url)
+            status.set('คัดลอกลิงก์ Pages ที่เชื่อม Tunnel แล้ว วางใน LIVE Studio ได้เลย')
+    pages_open_button = button(pages_actions, 'เปิดจอ Pages', pages_open)
+    pages_open_button.pack(side='left', padx=(0, 7))
+    pages_copy_button = button(pages_actions, 'คัดลอกจอ Pages', pages_copy)
+    pages_copy_button.pack(side='left')
+    button(pages_actions, 'เว็บรวม / เดโม', lambda: open_game_page(manager.pages_base)).pack(side='right')
+
     bottom = tk.Frame(content, bg=bg)
     bottom.pack(fill='x', padx=29, pady=(14, 6))
     tk.Label(bottom, textvariable=status, font=(font, 11), bg=bg, fg=green, anchor='w',
@@ -377,6 +404,8 @@ def main():
         for item in (control_button, screen_button, stop_button, create_button):
             update_widget(item, state='normal' if running and not busy else 'disabled')
         valid_link = bool(manager.public_url) and running and manager.processes.get('tunnel') and manager.processes['tunnel'].poll() is None
+        for item in (pages_open_button, pages_copy_button):
+            update_widget(item, state='normal' if valid_link and manager.pages_base and not busy else 'disabled')
         for item in (copy_button, view_button, stop_link_button):
             update_widget(item, state='normal' if valid_link and not busy else 'disabled')
         link_text = manager.public_url if valid_link else 'ยังไม่มีลิงก์ — เปิดเกมแล้วกด «สร้างลิงก์ไลฟ์»'

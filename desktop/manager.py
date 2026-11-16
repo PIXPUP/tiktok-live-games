@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.5.2'
+VERSION = '1.6.0'
 
 
 def physical_ram_gb():
@@ -131,6 +131,10 @@ class Manager:
         self.processes = {}
         self.active = None
         self.public_url = ''
+        self.pages_base = ''
+        for config in (self.root / 'pages-config.json', self.data / 'pages-config.json'):
+            try: self.pages_base = self.validate_pages_url(json.loads(config.read_text(encoding='utf-8'))['base_url'])
+            except (OSError, ValueError, KeyError, TypeError): pass
         self.lock = threading.RLock()
         self.cancel = threading.Event()
         self.group = ProcessGroup()
@@ -139,6 +143,27 @@ class Manager:
         if not self.active:
             return ''
         return self.active.url + ('&lite=1' if self.low_memory else '')
+
+    @staticmethod
+    def validate_pages_url(value):
+        parts = urlsplit(str(value).strip())
+        if parts.scheme != 'https' or not re.fullmatch(r'[a-z0-9-]+\.pages\.dev', parts.netloc) or parts.path not in ('', '/') or parts.query or parts.fragment:
+            raise ValueError('ใส่ลิงก์หลัก https://ชื่อเว็บ.pages.dev เท่านั้น')
+        return 'https://' + parts.netloc
+
+    def set_pages_base(self, value):
+        value = self.validate_pages_url(value)
+        if self.public_url and value != self.pages_base:
+            raise ValueError('ปิดลิงก์ไลฟ์ก่อนเปลี่ยนเว็บไซต์ Pages แล้วสร้างลิงก์ใหม่')
+        self.pages_base = value
+        (self.data / 'pages-config.json').write_text(json.dumps({'base_url':value}), encoding='utf-8')
+
+    def pages_url(self):
+        if not self.pages_base or not self.active or not self.public_url: return ''
+        backend = urlsplit(self.public_url)
+        query = {'overlay':'1', 'transport':'poll', 'backend':backend.scheme+'://'+backend.netloc}
+        if self.low_memory: query['lite'] = '1'
+        return self.pages_base + '/games/' + self.active.key + '/?' + urlencode(query)
 
     def set_low_memory(self, enabled):
         self.low_memory = bool(enabled)
@@ -256,12 +281,9 @@ class Manager:
             cloudflared = self.runtime('cloudflared')
             directory = self.games_dir / game.key
             self.notify('กำลังเตรียมลิงก์ Cloudflare…')
-            if game.key == 'curry-shop-3d':
-                command = self.service_command('gateway', game.port, game.gateway)
-            else:
-                command = self.service_command('script', directory / 'cloudflare_gateway.py')
+            command = self.service_command('gateway', game.port, game.gateway) if getattr(sys, 'frozen', False) else self.service_command('script', self.root / 'desktop' / 'gateway.py')
             try:
-                self.spawn('gateway', command, directory, dict(os.environ, GAME_PORT=str(game.port), CLOUDFLARE_GATEWAY_PORT=str(game.gateway)))
+                self.spawn('gateway', command, directory, dict(os.environ, GAME_PORT=str(game.port), CLOUDFLARE_GATEWAY_PORT=str(game.gateway), GAME_KEY=game.key, PAGES_ORIGIN=self.pages_base))
                 self.wait_ready(f'http://127.0.0.1:{game.gateway}/health', 'gateway')
                 # Dedicated config avoids any existing named-tunnel configuration.
                 config = self.data / 'quick-tunnel.yml'
