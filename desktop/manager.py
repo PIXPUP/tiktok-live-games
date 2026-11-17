@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.7.0'
+VERSION = '1.8.0'
 
 
 def physical_ram_gb():
@@ -170,6 +170,13 @@ class Manager:
         except (OSError, ValueError): pass
         return self.pages_base + '/games/' + self.active.key + '/?' + urlencode(query)
 
+    def pages_dashboard_url(self):
+        url = self.pages_url()
+        if not url: return self.pages_base
+        parts = urlsplit(url)
+        query = [('game', self.active.key), *parse_qsl(parts.query)]
+        return self.pages_base + '/?' + urlencode(query)
+
     def import_gift_layout(self, path):
         from gift_layout import normalize
         with self.lock:
@@ -186,7 +193,7 @@ class Manager:
             temporary = target.with_suffix('.tmp')
             temporary.write_text(json.dumps(config), encoding='utf-8')
             temporary.replace(target)
-            self.notify('ใช้ของขวัญใหม่แล้ว กดคัดลอกจอ Pages ไปใช้กับไลฟ์')
+            self.notify('ใช้ของขวัญใหม่แล้ว เปิดเว็บและเข้าสู่ระบบเพื่อสร้างลิงก์จอไลฟ์')
             return config
 
     def set_low_memory(self, enabled):
@@ -340,7 +347,7 @@ class Manager:
                                 self.public_url = candidate + '/?overlay=1&transport=poll&v=' + str(game.version)
                                 if self.low_memory:
                                     self.public_url += '&lite=1'
-                                self.notify('ลิงก์พร้อมแล้ว กดคัดลอกไปวางใน LIVE Studio ได้เลย')
+                                self.notify('Tunnel พร้อมแล้ว เปิดเว็บและเข้าสู่ระบบเพื่อรับลิงก์จอไลฟ์')
                                 return self.public_url
                         except (OSError, ValueError):
                             pass

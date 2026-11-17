@@ -35,3 +35,7 @@ dist/
 runtime/
 
 desktop-*-report.json
+
+# Local authentication emulator and worker bindings
+.dev.vars
+.dev.vars.*

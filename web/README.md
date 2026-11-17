@@ -19,7 +19,7 @@ node --test web/runtime.test.mjs
 wrangler pages deploy dist/pages --project-name pixpup-live-games --branch codex/three-games
 ```
 
-ไม่ต้องใช้ Pages Functions หรือ Workers ที่รันตลอดเวลา ส่วนเซิร์ฟเวอร์ยังเปิดเฉพาะตอนใช้งาน
+หน้าเกมเป็นไฟล์ static ส่วนการตรวจสิทธิ์ใช้ Pages Worker เมื่อมี request เซิร์ฟเวอร์กิจกรรมยังเปิดเฉพาะตอนใช้งาน Tunnel
 
 ตัว build คัดลอกเฉพาะหน้าเกม CSS JS รูป เสียง และประกาศสิทธิ์ ไม่รวม Python/Node server, gift-map, บันทึกเหตุการณ์หรือข้อมูลบัญชี และตรวจขนาดไฟล์ไม่เกิน 25 MiB
 
@@ -32,3 +32,7 @@ Pages ติดต่อได้เฉพาะลิงก์ HTTPS trycloudfl
 รับของขวัญจริง: ในโปรแกรมรุ่น 1.7.0 เปิดเกมเดียวกัน กดนำเข้าของขวัญ / จัดหน้าจากเว็บ เลือกไฟล์ที่โหลดมา แล้วคัดลอกจอ Pages ใหม่ ไม่ต้องเปิด JSON แก้เอง โปรแกรมตรวจไฟล์กับแค็ตตาล็อกแล้วเปลี่ยนการจับคู่ผ่าน bridge ในเครื่อง หน้าเว็บแสดงว่าภาพกับการรับจริงตรงกันหรือยัง Tunnel ไม่เปิด POST/control สาธารณะ
 
 คลังรูปเก็บที่ gift-library สามารถอัปเดตด้วย python web/download_gifts.py (ต้องมี curl) ตัวดาวน์โหลดใช้ไฟล์แค็ตตาล็อก cache ใน build/gift-sources ถ้าจะดึงรายการใหม่ให้สำรอง cache แล้วโหลดแค็ตตาล็อกใหม่ รายการใน snapshot ไม่รับประกันของทุกประเทศ/ทุกห้อง ภาพเป็นของ TikTok และเจ้าของสิทธิ์
+
+## Firebase login (1.8.0)
+
+ติดตั้ง dependencies ด้วย npm ci ก่อน python web/build.py ระบบ build จะ bundle Firebase Auth client กับ Pages Worker ทุกเส้นทางหน้าเกม/ข้อมูลผ่านการตรวจ Firebase ID token ผู้ใช้ต้องสมัคร/เข้าสู่ระบบก่อนใช้เว็บ ลิงก์จอไลฟ์ต้องสร้างด้วยปุ่มคัดลอกจากเว็บหลังล็อกอิน ไม่ใช้ URL หน้าจอแบบเดิมไปวางตรง ๆ ดู web/auth/README.md

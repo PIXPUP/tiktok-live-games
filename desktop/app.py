@@ -228,7 +228,7 @@ def main():
         if manager.public_url:
             window.clipboard_clear()
             window.clipboard_append(manager.public_url)
-            status.set('คัดลอกลิงก์แล้ว ไปวางใน TikTok LIVE Studio → เพิ่ม Link ได้เลย')
+            status.set('คัดลอก Tunnel แล้ว ใช้เชื่อมในเว็บหลังเข้าสู่ระบบ')
 
     def launch_tikfinity():
         settings_path = data / 'settings.json'
@@ -329,7 +329,7 @@ def main():
 
     links = tk.Frame(content, bg=surface, padx=20, pady=14)
     links.pack(fill='x', padx=29)
-    label(links, 'ลิงก์สำหรับ TikTok LIVE Studio', 15).pack(anchor='w')
+    label(links, 'การเชื่อมต่อเซิร์ฟเวอร์ / Tunnel', 15).pack(anchor='w')
     entry = tk.Entry(links, textvariable=public, state='readonly', readonlybackground='#0d1828',
                      fg=green, font=(font, 11), relief='flat', bd=0)
     entry.pack(fill='x', ipady=10, pady=(8, 9))
@@ -337,7 +337,7 @@ def main():
     link_controls.pack(fill='x')
     create_button = button(link_controls, 'สร้างลิงก์ไลฟ์', public_start, True)
     create_button.pack(side='left', padx=(0, 7))
-    copy_button = button(link_controls, 'คัดลอกลิงก์', copy_link)
+    copy_button = button(link_controls, 'คัดลอก Tunnel', copy_link)
     copy_button.pack(side='left', padx=(0, 7))
     view_button = button(link_controls, 'เปิดลิงก์', lambda: open_game_page(manager.public_url))
     view_button.pack(side='left')
@@ -358,16 +358,15 @@ def main():
     pages_actions = tk.Frame(links, bg=surface)
     pages_actions.pack(fill='x', pady=(7, 0))
     def pages_open():
-        if manager.pages_url(): open_game_page(manager.pages_url())
+        if manager.pages_dashboard_url(): open_game_page(manager.pages_dashboard_url())
     def pages_copy():
-        url = manager.pages_url()
+        url = manager.pages_dashboard_url()
         if url:
-            window.clipboard_clear()
-            window.clipboard_append(url)
-            status.set('คัดลอกลิงก์ Pages ที่เชื่อม Tunnel แล้ว วางใน LIVE Studio ได้เลย')
-    pages_open_button = button(pages_actions, 'เปิดจอ Pages', pages_open)
+            open_game_page(url)
+            status.set('เข้าสู่ระบบเว็บ แล้วกดคัดลอกลิงก์หน้าจอไลฟ์ในเว็บ เพื่อนำไปใช้กับ LIVE Studio')
+    pages_open_button = button(pages_actions, 'เปิดเว็บเกม', pages_open)
     pages_open_button.pack(side='left', padx=(0, 7))
-    pages_copy_button = button(pages_actions, 'คัดลอกจอ Pages', pages_copy)
+    pages_copy_button = button(pages_actions, 'รับลิงก์ไลฟ์ผ่านเว็บ', pages_copy)
     pages_copy_button.pack(side='left')
     button(pages_actions, 'เว็บรวม / เดโม', lambda: open_game_page(manager.pages_base)).pack(side='right')
     def import_gifts():
@@ -376,7 +375,7 @@ def main():
             return
         path = dialog(filedialog.askopenfilename, title='เลือกไฟล์จัดของขวัญที่ดาวน์โหลดจากเว็บ', filetypes=[('Gift layout', '*.json')])
         if path:
-            work(lambda: manager.import_gift_layout(path), lambda _: status.set('นำเข้าของขวัญแล้ว กดคัดลอกจอ Pages ใหม่ไปใช้ใน LIVE Studio'))
+            work(lambda: manager.import_gift_layout(path), lambda _: status.set('นำเข้าของขวัญแล้ว กดรับลิงก์ไลฟ์ผ่านเว็บ เข้าสู่ระบบและคัดลอกจากเว็บ'))
     import_gifts_button = button(links, 'นำเข้าของขวัญ / จัดหน้าจากเว็บ', import_gifts)
     import_gifts_button.pack(anchor='w', pady=(8, 0))
 

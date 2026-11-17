@@ -1,5 +1,6 @@
 import dataclasses,json,os,socket,tempfile,time,unittest,urllib.request,urllib.error
 from pathlib import Path
+from urllib.parse import urlsplit,parse_qs
 from manager import Manager,GAMES,json_get
 ROOT=Path(__file__).resolve().parent.parent
 
@@ -17,6 +18,7 @@ class PagesTests(unittest.TestCase):
     m.active=GAMES[0];m.public_url='https://test.trycloudflare.com/?overlay=1'
     self.assertIn('/games/boon-live/?',m.pages_url())
     self.assertIn('backend=https%3A%2F%2Ftest.trycloudflare.com',m.pages_url())
+    dashboard=urlsplit(m.pages_dashboard_url());self.assertEqual(dashboard.path,'/');self.assertEqual(parse_qs(dashboard.query)['game'],['boon-live']);self.assertEqual(parse_qs(dashboard.query)['backend'],['https://test.trycloudflare.com'])
     with self.assertRaises(ValueError):m.set_pages_base('https://different.pages.dev')
    finally:m.close()
  def test_every_game_gateway_has_scoped_cors_and_blocks_control_requests(self):

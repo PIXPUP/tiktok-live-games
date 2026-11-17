@@ -18,3 +18,10 @@
   Cache-Control: no-cache
 /gift-editor.js
   Cache-Control: no-cache
+
+/auth.js
+  Cache-Control: no-cache
+/auth.css
+  Cache-Control: no-cache
+/login.html
+  Cache-Control: no-store

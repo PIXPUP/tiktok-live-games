@@ -40,11 +40,13 @@ for game in GAMES:
   if (source/name).exists():shutil.copyfile(source/name,target/name)
  catalog.append({'key':game.key,'title':game.title,'description':game.description,'labels':LABELS[game.key]})
 for script in OUT.glob('games/*/game.js'): subprocess.run(['node','--check',str(script)],check=True)
-for name in ['index.html','portal.css','portal.js','game-runtime.js','gift-layout.js','gift-editor.js','_headers','404.html']:
+for name in ['index.html','portal.css','portal.js','game-runtime.js','gift-layout.js','gift-editor.js','_headers','404.html','login.html','auth.css']:
  shutil.copyfile(ROOT/'web'/name,OUT/name)
+shutil.copytree(ROOT/'web/licenses',OUT/'licenses',dirs_exist_ok=True)
 shutil.copytree(ROOT/'gift-library',OUT/'gift-library',dirs_exist_ok=True,ignore=shutil.ignore_patterns('*.partial','download-report.json'))
 (OUT/'games.json').write_text(json.dumps(catalog,ensure_ascii=False),encoding='utf-8')
 shutil.copyfile(ROOT/'THIRD_PARTY_NOTICES.md',OUT/'THIRD_PARTY_NOTICES.txt')
+subprocess.run(['node',str(ROOT/'web/build-auth.mjs')],cwd=ROOT,check=True)
 files=[p for p in OUT.rglob('*') if p.is_file()]
 for p in files:
  if p.stat().st_size>25*1024*1024:raise ValueError('Pages asset exceeds 25 MiB: '+str(p))
