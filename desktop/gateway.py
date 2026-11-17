@@ -7,6 +7,7 @@ import re
 import threading
 import time
 import uuid
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
@@ -45,6 +46,17 @@ def serve(source_port, gateway_port):
     game = os.environ.get('GAME_KEY', 'curry-shop-3d')
     pages_origin = os.environ.get('PAGES_ORIGIN', '').rstrip('/')
     journal = EventJournal()
+    config_directory = Path(os.environ.get('GAME_DIRECTORY', '.'))
+    def settings():
+        result = {}
+        for file, key in (('gift-map.json', 'bindings'), ('gift-layout.json', 'presentation')):
+            try:
+                path = config_directory / file
+                if path.stat().st_size > 16384: continue
+                value = json.loads(path.read_text(encoding='utf-8-sig'))
+                result[key] = value.get('bindings', []) if key == 'bindings' else value
+            except (OSError, ValueError, AttributeError): pass
+        return result
     def follow():
         while True:
             upstream = http.client.HTTPConnection('127.0.0.1', source_port, timeout=35)
@@ -92,6 +104,7 @@ def serve(source_port, gateway_port):
                 except (ValueError, IndexError):
                     self.reply(400, {'error':'Invalid cursor'}); return
                 data = journal.read(cursor, query.get('epoch', [None])[0])
+                data.update(settings())
                 self.reply(200 if data['ready'] else 503, data)
                 return
             if route not in STATIC | {'/api/poll', '/api/bridge'} and not re.fullmatch(r'/assets/[a-f0-9]{64}\.(?:png|webp|jpg|mp3)', route):
@@ -101,6 +114,10 @@ def serve(source_port, gateway_port):
                 upstream.request('GET', self.path)
                 response = upstream.getresponse()
                 body = response.read()
+                if route == '/api/poll' and response.status == 200:
+                    data = json.loads(body)
+                    data.update(settings())
+                    body = json.dumps(data).encode()
                 self.send_response(response.status)
                 self.send_header('Content-Type', response.getheader('Content-Type', 'application/octet-stream'))
                 self.send_header('Cache-Control', response.getheader('Cache-Control', 'no-store') if route.startswith('/assets/') else 'no-store')

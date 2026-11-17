@@ -1,6 +1,6 @@
 # ดาวน์โหลดโปรแกรม Windows (.exe)
 
-## [ดาวน์โหลดแอปรุ่น 1.6.0](https://github.com/PIXPUP/tiktok-live-games/releases/download/desktop-v1.6.0/TikTokLiveGameDesk-v1.6.0-Windows-x64.zip)
+## [ดาวน์โหลดแอปรุ่น 1.7.0](https://github.com/PIXPUP/tiktok-live-games/releases/download/desktop-v1.7.0/TikTokLiveGameDesk-v1.7.0-Windows-x64.zip)
 
 ไฟล์แอปอยู่ใน Assets ของหน้า Releases ส่วนโฟลเดอร์ desktop และปุ่ม Code → Download ZIP เป็นซอร์สโค้ด
 
@@ -22,3 +22,5 @@
 รุ่น 1.5.2 ปรับเปิดเพลงบนเครื่องช้า รอยืนยันเสียงเริ่มเล่น ลองใหม่หนึ่งครั้ง ป้องกันกดซ้ำ และแสดงสถานะอุปกรณ์เสียง
 
 รุ่น 1.6.0 เพิ่มเว็บรวม Pages + Tunnel และปุ่มเปิด/คัดลอกจอ Pages ที่เชื่อมอัตโนมัติ: https://pixpup-live-games.pages.dev
+
+รุ่น 1.7.0 เพิ่มคลัง 1,851 รายการ จัดแถบของขวัญบนเว็บ และนำเข้าการตั้งค่าเพื่อให้ตัวรับของขวัญจริงตรงกับภาพ

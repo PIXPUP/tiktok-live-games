@@ -370,6 +370,15 @@ def main():
     pages_copy_button = button(pages_actions, 'คัดลอกจอ Pages', pages_copy)
     pages_copy_button.pack(side='left')
     button(pages_actions, 'เว็บรวม / เดโม', lambda: open_game_page(manager.pages_base)).pack(side='right')
+    def import_gifts():
+        if not manager.running():
+            status.set('เปิดเกมก่อนนำเข้าของขวัญจากเว็บ')
+            return
+        path = dialog(filedialog.askopenfilename, title='เลือกไฟล์จัดของขวัญที่ดาวน์โหลดจากเว็บ', filetypes=[('Gift layout', '*.json')])
+        if path:
+            work(lambda: manager.import_gift_layout(path), lambda _: status.set('นำเข้าของขวัญแล้ว กดคัดลอกจอ Pages ใหม่ไปใช้ใน LIVE Studio'))
+    import_gifts_button = button(links, 'นำเข้าของขวัญ / จัดหน้าจากเว็บ', import_gifts)
+    import_gifts_button.pack(anchor='w', pady=(8, 0))
 
     bottom = tk.Frame(content, bg=bg)
     bottom.pack(fill='x', padx=29, pady=(14, 6))
@@ -406,6 +415,7 @@ def main():
         valid_link = bool(manager.public_url) and running and manager.processes.get('tunnel') and manager.processes['tunnel'].poll() is None
         for item in (pages_open_button, pages_copy_button):
             update_widget(item, state='normal' if valid_link and manager.pages_base and not busy else 'disabled')
+        update_widget(import_gifts_button, state='normal' if running and not busy else 'disabled')
         for item in (copy_button, view_button, stop_link_button):
             update_widget(item, state='normal' if valid_link and not busy else 'disabled')
         link_text = manager.public_url if valid_link else 'ยังไม่มีลิงก์ — เปิดเกมแล้วกด «สร้างลิงก์ไลฟ์»'

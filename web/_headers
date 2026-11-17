@@ -11,3 +11,10 @@
   Cache-Control: no-cache
 /games/*/assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+/gift-library/*
+  Cache-Control: public, max-age=86400
+/gift-layout.js
+  Cache-Control: no-cache
+/gift-editor.js
+  Cache-Control: no-cache

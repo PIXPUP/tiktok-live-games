@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.6.0'
+VERSION = '1.7.0'
 
 
 def physical_ram_gb():
@@ -163,7 +163,31 @@ class Manager:
         backend = urlsplit(self.public_url)
         query = {'overlay':'1', 'transport':'poll', 'backend':backend.scheme+'://'+backend.netloc}
         if self.low_memory: query['lite'] = '1'
+        try:
+            config = self.games_dir / self.active.key / 'gift-layout.json'
+            if config.stat().st_size <= 16384:
+                query['layout'] = json.dumps(json.loads(config.read_text(encoding='utf-8')), separators=(',', ':'))
+        except (OSError, ValueError): pass
         return self.pages_base + '/games/' + self.active.key + '/?' + urlencode(query)
+
+    def import_gift_layout(self, path):
+        from gift_layout import normalize
+        with self.lock:
+            if not self.running(): raise ValueError('เปิดเกมที่ต้องการก่อนนำเข้าของขวัญ')
+            source = Path(path)
+            if source.stat().st_size > 16384: raise ValueError('ไฟล์จัดหน้าใหญ่เกินไป')
+            catalog = json.loads((self.root / 'gift-library' / 'catalog.json').read_text(encoding='utf-8'))
+            config, bindings = normalize(json.loads(source.read_text(encoding='utf-8-sig')), self.active.key, catalog)
+            req = urllib.request.Request(f'http://127.0.0.1:{self.active.bridge}/config',
+                data=json.dumps({'bindings':bindings}).encode(), headers={'Content-Type':'application/json'})
+            with urllib.request.urlopen(req, timeout=8) as response:
+                if not json.load(response).get('ok'): raise RuntimeError('ตัวรับของขวัญไม่ยอมรับการตั้งค่า')
+            target = self.games_dir / self.active.key / 'gift-layout.json'
+            temporary = target.with_suffix('.tmp')
+            temporary.write_text(json.dumps(config), encoding='utf-8')
+            temporary.replace(target)
+            self.notify('ใช้ของขวัญใหม่แล้ว กดคัดลอกจอ Pages ไปใช้กับไลฟ์')
+            return config
 
     def set_low_memory(self, enabled):
         self.low_memory = bool(enabled)
@@ -192,6 +216,8 @@ class Manager:
                         mapping = json.loads(old.read_text(encoding='utf-8-sig'))
                         if isinstance(mapping.get('bindings'), list):
                             shutil.copy2(old, destination / 'gift-map.json')
+                            previous_layout = directory / game.key / 'gift-layout.json'
+                            if previous_layout.exists(): shutil.copy2(previous_layout, destination / 'gift-layout.json')
                             break
                     except (OSError, ValueError):
                         pass
@@ -283,7 +309,7 @@ class Manager:
             self.notify('กำลังเตรียมลิงก์ Cloudflare…')
             command = self.service_command('gateway', game.port, game.gateway) if getattr(sys, 'frozen', False) else self.service_command('script', self.root / 'desktop' / 'gateway.py')
             try:
-                self.spawn('gateway', command, directory, dict(os.environ, GAME_PORT=str(game.port), CLOUDFLARE_GATEWAY_PORT=str(game.gateway), GAME_KEY=game.key, PAGES_ORIGIN=self.pages_base))
+                self.spawn('gateway', command, directory, dict(os.environ, GAME_PORT=str(game.port), CLOUDFLARE_GATEWAY_PORT=str(game.gateway), GAME_KEY=game.key, PAGES_ORIGIN=self.pages_base, GAME_DIRECTORY=str(directory)))
                 self.wait_ready(f'http://127.0.0.1:{game.gateway}/health', 'gateway')
                 # Dedicated config avoids any existing named-tunnel configuration.
                 config = self.data / 'quick-tunnel.yml'

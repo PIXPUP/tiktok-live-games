@@ -21,7 +21,7 @@
   if(url.origin!==location.origin||!url.pathname.startsWith('/api/'))return originalFetch(input,options);
   if(url.pathname==='/api/poll'){
    if(!backend){report('demo','โหมดทดลอง · ยังไม่เชื่อมไลฟ์');return response({ready:true,reset:true,epoch,cursor:0,state:empty,events:[]});}
-   try{const r=await remote(url.pathname+url.search,options);if(!r.ok)throw Error('เซิร์ฟเวอร์ยังไม่พร้อม');report('live','เชื่อมเซิร์ฟเวอร์แล้ว · ควบคุมจากโปรแกรมบนคอม');return r;}
+   try{const r=await remote(url.pathname+url.search,options);if(!r.ok)throw Error('เซิร์ฟเวอร์ยังไม่พร้อม');const data=await r.json();window.LiveGiftLayout?.fromServer(data);report('live','เชื่อมเซิร์ฟเวอร์แล้ว · ควบคุมจากโปรแกรมบนคอม');return response(data);}
    catch(error){report('offline',error.message||'Tunnel หยุดอยู่ กดเชื่อมใหม่ด้วยลิงก์ปัจจุบัน');throw error;}
   }
   if(url.pathname==='/api/event'){
