@@ -34,7 +34,7 @@ onIdTokenChanged(auth,async user=>{
  }catch(error){if(loginPage)message(friendly(error));else location.replace('/login?next='+encodeURIComponent(location.pathname+location.search));}
 });
 async function ensure(){if(!auth.currentUser){location.assign('/login');throw Error('กรุณาเข้าสู่ระบบ');}return establish(auth.currentUser,true);}
-async function createOverlay(url){await ready;const cached=links.get(url);if(cached&&Date.parse(cached.expiresAt)>Date.now()+60000)return cached;await ensure();const r=await fetch('/api/overlay',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});const data=await r.json();if(r.status===402){location.assign('/billing');throw Error(data.error);}if(!r.ok)throw Error(data.error||'สร้างลิงก์ไม่สำเร็จ');links.set(url,data);return data;}
+async function createOverlay(url){await ready;const cached=links.get(url);if(cached&&Date.parse(cached.expiresAt)>Date.now()+60000)return cached;await ensure();const r=await fetch('/api/overlay',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});const data=await r.json();if(r.status===402){location.assign('/membership');throw Error(data.error);}if(!r.ok)throw Error(data.error||'สร้างลิงก์ไม่สำเร็จ');links.set(url,data);return data;}
 window.LiveAuth={ready,createOverlay,get uid(){return currentUid;},get authenticated(){return Boolean(currentUid);}};
 if(loginPage){
  $('auth-form').onsubmit=async event=>{
