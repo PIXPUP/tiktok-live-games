@@ -14,7 +14,8 @@ def configure(admin_uid,preview_test_admin=None):
  project=api('pages/projects/'+PROJECT);namespaces=api('storage/kv/namespaces?per_page=1000');updates={}
  for environment in ['production','preview']:
   old=project['deployment_configs'].get(environment,{})
-  values={k:v for k,v in (old.get('env_vars') or {}).items() if not k.startswith('STRIPE_')}
+  # Cloudflare PATCH merges env_vars; null deletes only the named obsolete variable.
+  values={k:None for k in (old.get('env_vars') or {}) if k.startswith('STRIPE_')}
   values['ADMIN_UIDS']={'type':'plain_text','value':admin_uid+(','+preview_test_admin if environment=='preview' and preview_test_admin else '')}
   values['MANUAL_ACCESS_ENABLED']={'type':'plain_text','value':'true'}
   title='live-games-members-'+environment;namespace=next((n for n in namespaces if n['title']==title),None)
