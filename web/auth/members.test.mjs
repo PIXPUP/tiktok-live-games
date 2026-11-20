@@ -33,7 +33,7 @@ test('Ordinary users cannot list accounts, visit admin paths, self-approve or fo
 test('Approval gates direct game assets, catalog, new and existing signed LIVE links',async()=>{
  const env=environment();await registerUser(env,member);
  assert.equal((await handler(req('/','user'),env)).headers.get('Location'),'/membership');
- for(const path of ['/games/boon-live/','/games/boon-live/game.js','/gift-library/catalog.json'])assert.equal((await handler(req(path,'user'),env)).status,402);
+ for(const path of ['/games/boon-live/','/games/boon-live/game.js','/games/bbq-live/','/games/garden-live/','/mini-live.js','/mini-live.css','/gift-library/catalog.json'])assert.equal((await handler(req(path,'user'),env)).status,402);
  assert.equal((await handler(req('/membership','user'),env)).status,200);
  const body={url:origin+'/games/boon-live/?overlay=1'};
  assert.equal((await handler(req('/api/overlay','user','POST',body),env)).status,402);
@@ -41,6 +41,7 @@ test('Approval gates direct game assets, catalog, new and existing signed LIVE l
  assert.equal((await handler(req('/','user'),env)).status,200);
  const result=await handler(req('/api/overlay','user','POST',body),env);assert.equal(result.status,200);const url=(await result.json()).url;
  assert.equal((await handler(new Request(url),env)).status,200);
+ for(const game of ['bbq-live','garden-live']){const minted=await handler(req('/api/overlay','user','POST',{url:origin+'/games/'+game+'/?overlay=1'}),env);assert.equal(minted.status,200);const screen=await handler(new Request((await minted.json()).url),env);const cookie=screen.headers.get('Set-Cookie').split(';')[0];assert.equal((await handler(new Request(origin+'/mini-live.js',{headers:{Cookie:cookie}}),env)).status,200);}
  await changeAccess(env,admin,{uid:'member',action:'suspend'});assert.equal((await handler(new Request(url),env)).status,402);
 });
 test('Verified session registers profile without trusting posted user identity',async()=>{

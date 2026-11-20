@@ -41,8 +41,12 @@ for game in GAMES:
  for name in ['temple-bg.png','pilgrim.png','dance-music.mp3']:
   if (source/name).exists():shutil.copyfile(source/name,target/name)
  catalog.append({'key':game.key,'title':game.title,'description':game.description,'labels':LABELS[game.key]})
+for extra in json.loads((ROOT/'web/games/catalog.json').read_text(encoding='utf-8')):
+ target=OUT/'games'/extra['key'];target.mkdir(parents=True,exist_ok=True)
+ shutil.copyfile(ROOT/'web/games'/extra['key']/'index.html',target/'index.html')
+ catalog.append(extra)
 for script in OUT.glob('games/*/game.js'): subprocess.run(['node','--check',str(script)],check=True)
-for name in ['index.html','portal.css','portal.js','game-runtime.js','gift-layout.js','gift-editor.js','_headers','404.html','login.html','auth.css','membership.html','membership.js','admin.html','admin.js']:
+for name in ['index.html','portal.css','portal.js','game-runtime.js','gift-layout.js','gift-editor.js','_headers','404.html','login.html','auth.css','membership.html','membership.js','admin.html','admin.js','mini-live.js','mini-live.css']:
  shutil.copyfile(ROOT/'web'/name,OUT/name)
 shutil.copytree(ROOT/'web/licenses',OUT/'licenses',dirs_exist_ok=True)
 shutil.copytree(ROOT/'gift-library',OUT/'gift-library',dirs_exist_ok=True,ignore=shutil.ignore_patterns('*.partial','download-report.json'))

@@ -4,7 +4,7 @@ Firebase handles login. Cloudflare Pages checks access server-side using a dedic
 
 ## Roles and setup
 
-- MANUAL_ACCESS_ENABLED=true enforces approval for all five web games, game assets, controls and new LIVE viewer links. Absence/false preserves the older login-only behavior during setup.
+- MANUAL_ACCESS_ENABLED=true enforces approval for all seven web games, game assets, controls and new LIVE viewer links. Absence/false preserves the older login-only behavior during setup.
 - MEMBERS_KV stores user profiles, access records and an append-only audit trail. Use separate namespaces for preview/production. Do not clear the namespace during deployment.
 - ADMIN_UIDS is an explicit comma-separated allowlist of Firebase UIDs configured by the owner on Cloudflare. Users cannot set roles, and the admin UI cannot create new admins. Never bootstrap admin access by email claimed in a browser request.
 - Existing OVERLAY_SIGNING_KEY and Firebase settings are preserved.
@@ -16,7 +16,7 @@ The first administrator account can be created with a random discarded password 
 
 1. A valid Firebase session registers only its cryptographically verified UID/email. New users start pending.
 2. Users see /membership. The admin sees /admin with paginated profiles (50 at a time), local search over loaded users, approval/extension/suspension buttons.
-3. Grant opens all five games for 30 days starting now. Extend adds 30 days from the later of now and the existing expiry. Suspend disables access. Client-supplied expiry, role or actor values are ignored.
+3. Grant opens all seven games for 30 days starting now. Extend adds 30 days from the later of now and the existing expiry. Suspend disables access. Client-supplied expiry, role or actor values are ignored.
 4. Only server-configured admins can list users or change access; admin pages and APIs are protected separately from membership. Exact Origin is required for writes. Admin access cannot be changed through these user buttons.
 5. Audit records include server time, authenticated actor UID, target UID and before/after access state. Stored in KV for owner review (not publicly served).
 6. Existing signed LIVE links check the owner's current access on server requests. A revoked or expired owner cannot reopen their old links. Already-loaded resources/code cannot be recalled; this is not DRM. The existing read-only Tunnel API is not made private by this gate.

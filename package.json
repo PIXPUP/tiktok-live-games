@@ -5,7 +5,7 @@
   "scripts": {
     "test:auth": "node --test web/auth/*.test.mjs",
     "build:auth": "node web/build-auth.mjs",
-    "test:web": "node --test web/auth/*.test.mjs web/runtime.test.mjs web/gift-layout.test.mjs"
+    "test:web": "node --test web/auth/*.test.mjs web/runtime.test.mjs web/gift-layout.test.mjs web/mini-live.test.mjs"
   },
   "dependencies": {
     "@firebase/app": "0.14.6",

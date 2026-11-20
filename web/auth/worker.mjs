@@ -1,7 +1,7 @@
 import {accessEnabled,isAdmin,registerUser,memberAccess,listUsers,changeAccess} from './members.mjs';
 import {verifyFirebase,cookieValue,safeNext,SESSION_COOKIE,GAME_KEYS,overlayCookie,verifyOverlay,mintOverlay,canonicalTarget,parseOverlayTarget} from './security.mjs';
 const PUBLIC_PATHS=new Set(['/login','/login/','/login.html','/auth.js','/auth.css','/portal.css','/favicon.ico','/404.html']);
-const SHARED_OVERLAY=new Set(['/gift-layout.js','/game-runtime.js']);
+const SHARED_OVERLAY=new Set(['/gift-layout.js','/game-runtime.js','/mini-live.js','/mini-live.css']);
 const unsafeMethods=new Set(['POST','PUT','DELETE','PATCH']);
 function reply(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers}});}
 function isSameOrigin(request){return request.headers.get('Origin')===new URL(request.url).origin;}
