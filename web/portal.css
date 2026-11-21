@@ -4,3 +4,4 @@
 .account{display:flex;align-items:center;gap:10px;font-size:12px;min-width:0}.account span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.account button{width:auto;margin:0;padding:6px 10px;font-size:11px}@media(max-width:550px){header{flex-wrap:wrap;gap:15px}.account span{max-width:170px}}
 
 @media(min-width:901px){.library{grid-template-columns:repeat(4,minmax(0,1fr))}.card{min-height:150px}}
+.membership-price{border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:#173025;font-size:16px;color:var(--muted)}.membership-price strong{color:var(--gold);white-space:nowrap}.membership-price a{color:var(--text);text-decoration:underline;margin-left:10px}
