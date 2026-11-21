@@ -5,3 +5,5 @@
 header>div>p:not(.eyebrow){display:none}
 
 header{top:1.2%;left:4%;right:4%;padding:8px 10px;border-radius:14px;background:#102b25ee;border:1px solid #ffffff22}h1{font-size:clamp(21px,4.6vw,28px)}.progress{top:13%}
+body[data-theme=christmas-live]{background:#081a2b}body[data-theme=christmas-live] #world{background:#152e43}body[data-theme=christmas-live] header{background:#162a3bed;border-color:#c8a46b}body[data-theme=christmas-live] .progress{background:#102737ed}body[data-theme=christmas-live] #notice{background:#263447f2;border-color:#bca66b}body[data-theme=christmas-live] .progress i{background:#dc9d9d}
+body[data-theme=christmas-live] #notice{bottom:28%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-height:none;padding:9px 12px;font-size:14px}body[data-theme=christmas-live] .supporters{bottom:24%}body[data-theme=christmas-live] #saved-note{display:none}body[data-theme=christmas-live] #leaders{margin-top:0}body[data-theme=christmas-live] #leaders span{font-size:11px;padding:3px 4px}

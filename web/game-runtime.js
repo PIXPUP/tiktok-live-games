@@ -1,7 +1,7 @@
 'use strict';
 (() => {
  const params=new URLSearchParams(location.search), game=location.pathname.split('/')[2];
- const feedGame=({'bbq-live':'curry-shop-3d','garden-live':'curry-shop-3d'})[game]||game;
+ const feedGame=({'bbq-live':'curry-shop-3d','garden-live':'curry-shop-3d','christmas-live':'curry-shop-3d'})[game]||game;
  params.set('transport','poll');params.set('overlay','1');
  history.replaceState(null,'',location.pathname+'?'+params.toString());
  const originalFetch=window.fetch.bind(window), empty={score:0,actions:0,players:{},recent:[]};

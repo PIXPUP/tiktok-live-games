@@ -46,7 +46,7 @@ for extra in json.loads((ROOT/'web/games/catalog.json').read_text(encoding='utf-
  shutil.copyfile(ROOT/'web/games'/extra['key']/'index.html',target/'index.html')
  catalog.append(extra)
 for script in OUT.glob('games/*/game.js'): subprocess.run(['node','--check',str(script)],check=True)
-for name in ['index.html','portal.css','portal.js','game-runtime.js','gift-layout.js','gift-editor.js','_headers','404.html','login.html','auth.css','membership.html','membership.js','admin.html','admin.js','mini-live.js','mini-live.css']:
+for name in ['index.html','portal.css','portal.js','game-runtime.js','gift-layout.js','gift-editor.js','_headers','404.html','login.html','auth.css','membership.html','membership.js','admin.html','admin.js','mini-live.js','mini-live.css','christmas-scene.js']:
  shutil.copyfile(ROOT/'web'/name,OUT/name)
 shutil.copytree(ROOT/'web/licenses',OUT/'licenses',dirs_exist_ok=True)
 shutil.copytree(ROOT/'gift-library',OUT/'gift-library',dirs_exist_ok=True,ignore=shutil.ignore_patterns('*.partial','download-report.json'))

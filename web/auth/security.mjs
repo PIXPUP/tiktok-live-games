@@ -1,7 +1,7 @@
 import {createRemoteJWKSet,jwtVerify,SignJWT} from 'jose';
 import config from '../firebase-config.json' with {type:'json'};
 export const SESSION_COOKIE='__Host-live-session';
-export const GAME_KEYS=new Set(['boon-live','ganesha-live','curry-shop-3d','alms-live','ramwong-live','bbq-live','garden-live']);
+export const GAME_KEYS=new Set(['boon-live','ganesha-live','curry-shop-3d','alms-live','ramwong-live','bbq-live','garden-live','christmas-live']);
 const remoteKeys=createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'));
 export async function verifyFirebase(token,projectId=config.projectId,keys=remoteKeys){
  if(typeof token!=='string'||token.length>8192)throw Error('Invalid session');

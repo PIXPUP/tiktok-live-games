@@ -15,6 +15,6 @@ const b=make('?backend=https%3A%2F%2Fx.trycloudflare.com');await b.w.fetch('/api
 const c=make('?backend=https%3A%2F%2Fx.trycloudflare.com','ramwong-live');await assert.rejects(c.w.fetch('/api/poll'));assert.equal(c.calls.length,1);assert.equal(c.reports.at(-1).mode,'offline');
 console.log('Pages runtime: offline demo, validation, live polling, wrong-game rejection, blocked real writes passed');
 
-for(const game of ['bbq-live','garden-live']){const v=make('?backend=https%3A%2F%2Fx.trycloudflare.com','curry-shop-3d',game);assert.equal((await v.w.fetch('/api/poll')).status,200);const wrong=make('?backend=https%3A%2F%2Fx.trycloudflare.com','boon-live',game);await assert.rejects(wrong.w.fetch('/api/poll'));}
+for(const game of ['bbq-live','garden-live','christmas-live']){const v=make('?backend=https%3A%2F%2Fx.trycloudflare.com','curry-shop-3d',game);assert.equal((await v.w.fetch('/api/poll')).status,200);const wrong=make('?backend=https%3A%2F%2Fx.trycloudflare.com','boon-live',game);await assert.rejects(wrong.w.fetch('/api/poll'));}
 
 const expiry=make();expiry.listeners.message({origin:expiry.w.location.origin,source:expiry.w.parent,data:{type:'pages-access',expiresAt:Date.now()-1}});await assert.rejects(expiry.w.fetch('/api/poll'));assert(expiry.events.some(e=>e.type==='pages-access-expired'));const timed=make();timed.listeners.message({origin:timed.w.location.origin,source:timed.w.parent,data:{type:'pages-access',expiresAt:Date.now()+86400000}});assert(timed.timers[0].ms<=86400000);
