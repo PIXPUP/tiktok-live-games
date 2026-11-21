@@ -14,7 +14,7 @@ The first administrator account can be created with a random discarded password 
 
 ## Behavior
 
-1. A valid Firebase session registers only its cryptographically verified UID/email. New users start pending.
+1. A valid Firebase session registers only its cryptographically verified UID/email. New profiles receive a one-day trial; existing profiles retain their previous access state.
 2. Signed-in users can browse the home catalog without approval. Selecting a game checks /api/access and shows the purchase dialog when access is pending, expired or suspended. /membership explains purchase and approval. New registrations always land on the home page. The admin sees /admin with paginated profiles (50 at a time), local search over loaded users, approval/extension/suspension buttons.
 3. Grant opens all seven games for 30 days starting now. Extend adds 30 days from the later of now and the existing expiry. Suspend disables access. Client-supplied expiry, role or actor values are ignored.
 4. Only server-configured admins can list users or change access; admin pages and APIs are protected separately from membership. Exact Origin is required for writes. Admin access cannot be changed through these user buttons.
@@ -28,3 +28,12 @@ The first administrator account can be created with a random discarded password 
 `npm run test:web` verifies manual grant/extension/expiry/suspension, audit actors, forged roles, self-approval denial, CSRF, direct asset access, existing signed viewer links and all previous Firebase/runtime/layout security tests.
 
 The owner administrator UID is configured on Cloudflare, not in browser code. Test-only preview administrators must be removed after QA.
+
+
+## One-day trial
+
+New profiles created by the first verified Firebase session receive `trialStartedAt` and `trialExpiresAt` (exactly 24 hours in server milliseconds). They stay on the home catalog and may open all seven games during the trial. Existing stored profiles are not retroactively enrolled. The profile and expiry have no TTL and are retained after expiry so login, device/browser changes and email changes cannot restart the trial for that UID. The KV consistency delay described above still applies.
+
+An explicit administrator access record always takes precedence: suspension denies access even during a trial, a paid grant grants 30 days from activation, and an expired paid record does not fall back to unused trial time. Trials are one per Firebase UID, not identity verification per individual.
+
+LIVE grants expire at the earlier of seven days and the owner's current access expiry. The iframe receives its expiry from its authenticated parent; signed standalone screens read the already server-verified grant's expiry. The runtime displays an access-ended panel and stops polling/demo events at expiry, including after a browser back/forward restore. Browser rendering is not DRM; server access checks remain authoritative.

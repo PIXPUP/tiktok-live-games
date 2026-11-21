@@ -50,12 +50,12 @@ export function createHandler({verifyIdentity=verifyFirebase,checkMembership=mem
    if(request.method!=='POST')return reply({error:'Method not allowed'},405);
    if(!isSameOrigin(request))return reply({error:'Origin not allowed'},403);
    const identity=await user();if(!identity)return reply({error:'Sign in required'},401);
-   if(!(await paid(identity)).active)return reply({error:'กรุณารอแอดมินเปิดสิทธิ์ก่อนสร้างลิงก์ไลฟ์',accessUrl:'/membership'},402);
+   const access=await paid(identity);if(!access.active)return reply({error:'กรุณารอแอดมินเปิดสิทธิ์ก่อนสร้างลิงก์ไลฟ์',accessUrl:'/membership'},402);
    if(Number(request.headers.get('Content-Length'))>10000)return reply({error:'Request too large'},413);
    try{
     const raw=await request.text();if(raw.length>10000)return reply({error:'Request too large'},413);
     const data=JSON.parse(raw),target=parseOverlayTarget(data.url,origin);
-    const grant=await mintOverlay(env,origin,identity.uid,target.game,canonicalTarget(target.url));
+    const grant=await mintOverlay(env,origin,identity.uid,target.game,canonicalTarget(target.url),undefined,access.expiresAt);
     target.url.searchParams.set('access',grant.token);
     return reply({url:target.url.href,expiresAt:new Date(grant.expires*1000).toISOString(),readOnly:true});
    }catch(error){return reply({error:error.message==='Overlay signing unavailable'?'ยังไม่พร้อมสร้างลิงก์ไลฟ์ กรุณาลองใหม่':'ลิงก์เกมไม่ถูกต้อง'},error.message==='Overlay signing unavailable'?503:400);}

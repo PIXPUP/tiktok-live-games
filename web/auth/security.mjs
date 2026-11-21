@@ -16,8 +16,8 @@ export function overlayCookie(game){return '__Host-live-overlay-'+game;}
 function secretKey(env){if(typeof env.OVERLAY_SIGNING_KEY!=='string'||env.OVERLAY_SIGNING_KEY.length<32)throw Error('Overlay signing unavailable');return new TextEncoder().encode(env.OVERLAY_SIGNING_KEY);}
 export function canonicalTarget(url){const u=new URL(url);u.searchParams.delete('access');u.searchParams.sort();return u.pathname+u.search;}
 export async function targetHash(target){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(target)))).map(x=>x.toString(16).padStart(2,'0')).join('');}
-export async function mintOverlay(env,origin,uid,game,target,now=Math.floor(Date.now()/1000)){
- const expires=now+7*86400;
+export async function mintOverlay(env,origin,uid,game,target,now=Math.floor(Date.now()/1000),accessExpiresAt=null){
+ const expires=Number.isFinite(accessExpiresAt)?Math.min(now+7*86400,Math.floor(accessExpiresAt/1000)):now+7*86400;
  const token=await new SignJWT({kind:'overlay',game,targetHash:await targetHash(target)}).setProtectedHeader({alg:'HS256'}).setSubject(uid).setIssuer(origin).setAudience('live-overlay').setIssuedAt(now).setExpirationTime(expires).setJti(crypto.randomUUID()).sign(secretKey(env));
  return {token,expires};
 }

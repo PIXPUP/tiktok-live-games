@@ -6,13 +6,16 @@ export async function registerUser(env,user){
  if(!env.MEMBERS_KV)return;
  const key=userKey(user.uid),existing=await env.MEMBERS_KV.get(key,'json');
  if(existing?.email===user.email)return;
- await env.MEMBERS_KV.put(key,JSON.stringify({uid:user.uid,email:user.email,registeredAt:existing?.registeredAt||new Date().toISOString()}));
+ const now=Date.now();
+ const profile=existing?{...existing,uid:user.uid,email:user.email}:{uid:user.uid,email:user.email,registeredAt:new Date(now).toISOString(),trialStartedAt:now,trialExpiresAt:now+86400000};
+ await env.MEMBERS_KV.put(key,JSON.stringify(profile));
 }
 export async function memberAccess(env,user){
  if(isAdmin(env,user.uid))return {active:true,admin:true,status:'admin',enforced:accessEnabled(env)};
  if(!accessEnabled(env))return {active:true,admin:false,status:'open',enforced:false};
  if(!env.MEMBERS_KV)return {active:false,admin:false,status:'unavailable',enforced:true};
  const record=await env.MEMBERS_KV.get(accessKey(user.uid),'json');
+ if(!record){const profile=await env.MEMBERS_KV.get(userKey(user.uid),'json');const end=profile?.trialExpiresAt;if(Number.isFinite(end)){return {active:end>Date.now(),admin:false,status:end>Date.now()?'trial':'trial_expired',expiresAt:end,trialExpiresAt:end,enforced:true};}}
  const active=Boolean(record?.enabled&&Number.isFinite(record.expiresAt)&&record.expiresAt>Date.now());
  return {active,admin:false,status:active?'approved':record?.enabled?'expired':record?'suspended':'pending',expiresAt:record?.expiresAt||null,enforced:true};
 }
