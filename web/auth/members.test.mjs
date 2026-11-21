@@ -30,9 +30,9 @@ test('Ordinary users cannot list accounts, visit admin paths, self-approve or fo
  assert.equal((await handler(req('/api/admin/users','admin'),env)).status,200);
  assert.equal((await handler(req('/api/admin/access','admin','POST',{uid:'member',action:'grant'}),env)).status,200);
 });
-test('Approval gates direct game assets, catalog, new and existing signed LIVE links',async()=>{
+test('Members can browse the catalog; approval still gates game assets and signed LIVE links',async()=>{
  const env=environment();await registerUser(env,member);
- assert.equal((await handler(req('/','user'),env)).headers.get('Location'),'/membership');
+ for(const path of ['/','/index.html','/portal.js','/games.json','/gift-editor.js','/gift-layout.js'])assert.equal((await handler(req(path,'user'),env)).status,200);
  for(const path of ['/games/boon-live/','/games/boon-live/game.js','/games/bbq-live/','/games/garden-live/','/mini-live.js','/mini-live.css','/gift-library/catalog.json'])assert.equal((await handler(req(path,'user'),env)).status,402);
  assert.equal((await handler(req('/membership','user'),env)).status,200);
  const body={url:origin+'/games/boon-live/?overlay=1'};

@@ -1,6 +1,7 @@
 import {accessEnabled,isAdmin,registerUser,memberAccess,listUsers,changeAccess} from './members.mjs';
 import {verifyFirebase,cookieValue,safeNext,SESSION_COOKIE,GAME_KEYS,overlayCookie,verifyOverlay,mintOverlay,canonicalTarget,parseOverlayTarget} from './security.mjs';
 const PUBLIC_PATHS=new Set(['/login','/login/','/login.html','/auth.js','/auth.css','/portal.css','/favicon.ico','/404.html']);
+const MEMBER_BROWSE=new Set(['/','/index.html','/portal.js','/games.json','/gift-editor.js','/gift-layout.js']);
 const SHARED_OVERLAY=new Set(['/gift-layout.js','/game-runtime.js','/mini-live.js','/mini-live.css']);
 const unsafeMethods=new Set(['POST','PUT','DELETE','PATCH']);
 function reply(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers}});}
@@ -72,9 +73,9 @@ export function createHandler({verifyIdentity=verifyFirebase,checkMembership=mem
   if(path==='/billing'||path==='/billing.html')return redirect('/membership');
   if(adminPage){if(!identity)return redirect('/login?next=%2Fadmin');if(!isAdmin(env,identity.uid))return reply({error:'Administrator only'},403);return noStore(await env.ASSETS.fetch(path==='/admin/'?new Request(new URL('/admin',origin),request):request));}
   if(identity){
+   if(MEMBER_BROWSE.has(path))return noStore(await env.ASSETS.fetch(request));
    if(memberPage)return noStore(await env.ASSETS.fetch(path==='/membership/'?new Request(new URL('/membership',origin),request):request));
    if((await paid(identity)).active)return noStore(await env.ASSETS.fetch(request));
-   if(path==='/'||path==='/index.html')return redirect('/membership');
   }
   const match=path.match(/^\/games\/([^/]+)(?:\/|$)/),game=match?.[1];
   if(game&&GAME_KEYS.has(game)){

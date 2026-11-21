@@ -15,7 +15,7 @@ The first administrator account can be created with a random discarded password 
 ## Behavior
 
 1. A valid Firebase session registers only its cryptographically verified UID/email. New users start pending.
-2. Users see /membership. The admin sees /admin with paginated profiles (50 at a time), local search over loaded users, approval/extension/suspension buttons.
+2. Signed-in users can browse the home catalog without approval. Selecting a game checks /api/access and shows the purchase dialog when access is pending, expired or suspended. /membership explains purchase and approval. New registrations always land on the home page. The admin sees /admin with paginated profiles (50 at a time), local search over loaded users, approval/extension/suspension buttons.
 3. Grant opens all seven games for 30 days starting now. Extend adds 30 days from the later of now and the existing expiry. Suspend disables access. Client-supplied expiry, role or actor values are ignored.
 4. Only server-configured admins can list users or change access; admin pages and APIs are protected separately from membership. Exact Origin is required for writes. Admin access cannot be changed through these user buttons.
 5. Audit records include server time, authenticated actor UID, target UID and before/after access state. Stored in KV for owner review (not publicly served).

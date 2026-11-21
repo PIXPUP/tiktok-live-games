@@ -26,7 +26,7 @@ onIdTokenChanged(auth,async user=>{
  }
  try{
   const identity=await establish(user);if(id!==sequence)return;
-  if(loginPage){location.replace(returnTarget());return;}
+  if(loginPage){location.replace(registration?'/':returnTarget());return;}
   if(currentUid&&currentUid!==user.uid){location.reload();return;}
   currentUid=user.uid;document.documentElement.dataset.userId=user.uid;
   if($('account-email')){$('account-email').textContent=identity.email||'สมาชิก';$('account-email').dataset.uid=user.uid;}
@@ -39,7 +39,7 @@ window.LiveAuth={ready,createOverlay,get uid(){return currentUid;},get authentic
 if(loginPage){
  $('auth-form').onsubmit=async event=>{
   event.preventDefault();const button=$('auth-submit');button.disabled=true;message(registration?'กำลังสมัครสมาชิก…':'กำลังเข้าสู่ระบบ…');
-  try{const email=$('email').value.trim(),password=$('password').value;if(registration&&password.length<8)throw Error('ใช้รหัสผ่านอย่างน้อย 8 ตัวอักษร');await (registration?createUserWithEmailAndPassword:signInWithEmailAndPassword)(auth,email,password);message('เข้าสู่ระบบแล้ว กำลังเปิดเกม…');}
+  try{const email=$('email').value.trim(),password=$('password').value;if(registration&&password.length<8)throw Error('ใช้รหัสผ่านอย่างน้อย 8 ตัวอักษร');await (registration?createUserWithEmailAndPassword:signInWithEmailAndPassword)(auth,email,password);message(registration?'สมัครสำเร็จ กำลังเปิดหน้าหลัก…':'เข้าสู่ระบบแล้ว กำลังเปิดหน้าเว็บ…');}
   catch(error){message(friendly(error));}finally{button.disabled=false;}
  };
  $('toggle-registration').onclick=()=>{registration=!registration;$('auth-title').textContent=registration?'สร้างบัญชีของคุณ':'เข้าสู่ระบบ';$('auth-submit').textContent=registration?'สมัครสมาชิก':'เข้าสู่ระบบ';$('toggle-registration').textContent=registration?'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ':'ยังไม่มีบัญชี? สมัครสมาชิก';$('password').autocomplete=registration?'new-password':'current-password';message('');};
