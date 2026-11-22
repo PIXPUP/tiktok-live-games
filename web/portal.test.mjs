@@ -10,3 +10,14 @@ const race=portal({active:false,status:'pending'});let resolve;race.ctx.fetch=()
 console.log('Browse-first portal: purchase only on game selection, no unpaid iframe, outage handling and stale selection checks passed');
 
 const trial=portal({active:true,status:'trial',expiresAt:Date.now()+86400000});assert.equal(await trial.ctx.select(game),true);assert.equal(trial.loads.length,1);assert.equal(trial.elements.get('trial-status').hidden,false);
+
+// Catalog details are static DOM; expanding them never starts game frames.
+const catalog=portal({active:true,status:'approved'});
+function node(){return {children:[],dataset:{},append(...items){this.children.push(...items);},replaceChildren(){this.children=[];},setAttribute(){}};}
+catalog.ctx.document.createElement=node;
+const library=catalog.ctx.document.getElementById('library');library.append=function(...items){this.children.push(...items);};library.replaceChildren=function(){this.children=[];};
+catalog.ctx.fetch=async path=>({ok:true,json:async()=>path==='/games.json'?[{...game,labels:['A','B','C','D','E','F','G','H']}]:{active:true,status:'approved'}});
+catalog.ctx.startPortal();await new Promise(resolve=>setImmediate(resolve));
+assert.equal(library.children.length,1);const card=library.children[0];assert.equal(card.className,'card');
+const body=card.children[1],details=body.children.find(n=>n.className==='game-details');assert.equal(details.children[2].children.length,8);assert.equal(catalog.loads.length,0);
+await body.children.at(-1).onclick();assert.equal(catalog.loads.length,1);

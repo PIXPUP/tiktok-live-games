@@ -1,7 +1,7 @@
 import {accessEnabled,isAdmin,registerUser,memberAccess,listUsers,changeAccess} from './members.mjs';
 import {verifyFirebase,cookieValue,safeNext,SESSION_COOKIE,GAME_KEYS,overlayCookie,verifyOverlay,mintOverlay,canonicalTarget,parseOverlayTarget} from './security.mjs';
 const PUBLIC_PATHS=new Set(['/login','/login/','/login.html','/auth.js','/auth.css','/portal.css','/favicon.ico','/404.html']);
-const MEMBER_BROWSE=new Set(['/','/index.html','/portal.js','/games.json','/gift-editor.js','/gift-layout.js']);
+const MEMBER_BROWSE=new Set(['/','/index.html','/portal.js','/games.json','/gift-editor.js','/gift-layout.js','/previews/boon.png','/previews/ganesha.png','/previews/alms.png','/previews/ramwong.png','/previews/bbq.jpg','/previews/garden.jpg','/previews/christmas.jpg']);
 const SHARED_OVERLAY=new Set(['/gift-layout.js','/game-runtime.js','/mini-live.js','/mini-live.css','/christmas-scene.js']);
 const unsafeMethods=new Set(['POST','PUT','DELETE','PATCH']);
 function reply(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers}});}
