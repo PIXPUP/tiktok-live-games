@@ -2,9 +2,11 @@ import json
 import tempfile
 import threading
 import unittest
+import urllib.error
+import io
 from pathlib import Path
 from unittest.mock import patch
-from member_session import MemberSession, SessionError
+from member_session import MemberSession, SessionError, request_json
 from manager import Manager, GAMES
 
 
@@ -104,6 +106,17 @@ class MemberSessionTests(unittest.TestCase):
                 self.assertEqual(manager.processes, {})
             finally:
                 manager.close()
+
+    def test_native_http_headers_and_private_errors(self):
+        error = urllib.error.HTTPError('https://test.invalid', 400, 'Bad request', {},
+            io.BytesIO(b'{"error":{"message":"PRIVATE_TOKEN_MUST_NOT_APPEAR"}}'))
+        with patch('urllib.request.urlopen', side_effect=error) as send:
+            with self.assertRaises(SessionError) as raised:
+                request_json('https://test.invalid', {'password': 'PRIVATE_PASSWORD'})
+        request = send.call_args.args[0]
+        self.assertEqual(request.get_header('User-agent'), 'MooHengGameDesk/1.9.0')
+        self.assertEqual(request.get_header('Accept'), 'application/json')
+        self.assertNotIn('PRIVATE', str(raised.exception))
 
 
 if __name__ == '__main__':

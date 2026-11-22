@@ -16,6 +16,8 @@ class SessionError(RuntimeError):
 
 def request_json(url, body=None, headers=None):
     headers = dict(headers or {})
+    headers.setdefault('User-Agent', 'MooHengGameDesk/1.9.0')
+    headers.setdefault('Accept', 'application/json')
     if isinstance(body, dict):
         body = json.dumps(body).encode('utf-8')
         headers['Content-Type'] = 'application/json'
