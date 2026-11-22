@@ -106,6 +106,9 @@ def main():
     from controls import Controls, ControlPanel
     from music import Music
     from ui_work import update_widget
+    from member_session import MemberSession, SITE
+    from login_panel import LoginPanel
+    from datetime import datetime
 
     # A second copy must not compete for ownership of the same game processes.
     mutex = None
@@ -122,7 +125,8 @@ def main():
 
     data = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'TikTokLiveGameDesk'
     messages = queue.Queue()
-    manager = Manager(ROOT, data, lambda text: messages.put(('message', text)))
+    session = MemberSession(ROOT / 'desktop' / 'firebase-config.json')
+    manager = Manager(ROOT, data, lambda text: messages.put(('message', text)), authorize=session.require_access)
     speech = Speech(data / 'speech-cache', lambda text: messages.put(('speech', text)))
     music_path = ROOT / 'runtime' / 'merit-background.wav'
     if not music_path.exists():
@@ -131,14 +135,17 @@ def main():
     controller = Controls(manager, speech, lambda text: messages.put(('message', text)))
     control_panel = None
     window = tk.Tk()
-    window.title('TikTok LIVE Game Desk — รวมเกมไลฟ์')
+    window.title('หมูเฮง LIVE Game Desk — สมาชิกและเกมไลฟ์')
     height = min(780, window.winfo_screenheight() - 90)
     window.geometry(f'1140x{height}')
-    window.minsize(1000, 620)
-    bg, surface, muted, text, green = '#0b1320', '#162235', '#9baec7', '#f0f5fb', '#70e0b3'
+    window.minsize(960, 620)
+    bg, surface, muted, text, green = '#0b1c18', '#17382d', '#b9cebf', '#fff4d6', '#ebca80'
     window.configure(bg=bg)
     font = 'Leelawadee UI'
     busy, closing = False, False
+    checking_access, access_stopping = False, False
+    account_text = tk.StringVar(value='ยังไม่ได้เข้าสู่ระบบ')
+    member_text = tk.StringVar(value='เข้าสู่ระบบเพื่อตรวจสิทธิ์')
     cards = {}
     status = tk.StringVar(value='เลือกเกมที่ต้องการ แล้วกด «เปิดเกม»')
     gift = tk.StringVar(value='TikFinity ยังไม่ได้เชื่อม')
@@ -149,8 +156,8 @@ def main():
 
     def button(parent, title, command, primary=False, width=None):
         result = tk.Button(parent, text=title, command=command, font=(font, 12, 'bold'),
-                           bg=green if primary else '#25364e', fg='#0b2420' if primary else text,
-                           activebackground='#a1f0ce' if primary else '#354a65', activeforeground='#0b2420' if primary else text,
+                           bg=green if primary else '#284b3b', fg='#0b2420' if primary else text,
+                           activebackground='#f8dfaa' if primary else '#3a604b', activeforeground='#0b2420' if primary else text,
                            disabledforeground='#708198', relief='flat', bd=0, padx=16, pady=9, cursor='hand2')
         if width:
             result.configure(width=width)
@@ -179,6 +186,9 @@ def main():
         threading.Thread(target=worker, daemon=True).start()
 
     def open_game(game):
+        if not session.allowed() or access_stopping:
+            status.set('เข้าสู่ระบบและตรวจสิทธิ์ก่อนเปิดเกม')
+            return
         if manager.active == game and manager.running():
             open_controls()
             return
@@ -186,6 +196,8 @@ def main():
             return
 
         def start():
+            session.check()
+            session.require_access()
             controller.stop_demo()
             speech.stop()
             music.stop()
@@ -196,7 +208,7 @@ def main():
 
     def open_controls():
         nonlocal control_panel
-        if not manager.running():
+        if not session.allowed() or not manager.running():
             return
         if control_panel is None or not control_panel.window.winfo_exists():
             control_panel = ControlPanel(window, manager, controller, speech, lambda text: messages.put(('message', text)), music=music)
@@ -222,7 +234,11 @@ def main():
             work(stop, lambda _: status.set('ปิดเกมแล้ว เลือกเกมใหม่ได้เลย'))
 
     def public_start():
-        work(manager.start_public)
+        def create():
+            session.check()
+            session.require_access()
+            return manager.start_public()
+        work(create)
 
     def copy_link():
         if manager.public_url:
@@ -264,6 +280,80 @@ def main():
             'ลิงก์ Cloudflare อาจเปลี่ยนเมื่อสร้างใหม่ ผู้มีลิงก์เห็นชื่อ/คะแนนได้\n'
             'TikFinity กับ TikTok LIVE Studio ยังต้องเข้าสู่ระบบด้วยตนเอง')
 
+    def check_access():
+        nonlocal checking_access
+        if checking_access or closing or not session.snapshot()['signedIn']:
+            return
+        checking_access = True
+        def check():
+            try:
+                session.check()
+                messages.put(('account', None))
+            except Exception:
+                messages.put(('account-error', 'เชื่อมต่อระบบสมาชิกไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วตรวจสิทธิ์อีกครั้ง'))
+            finally:
+                messages.put(('account-checked', None))
+        threading.Thread(target=check, daemon=True).start()
+
+    def submit_login(email, password):
+        def sign_in():
+            try:
+                session.sign_in(email, password)
+                messages.put(('login-done', None))
+            except Exception as error:
+                # Only our translated errors may reach the form; never raw transport data.
+                from member_session import SessionError
+                messages.put(('login-error', str(error) if isinstance(error, SessionError) else 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่'))
+        threading.Thread(target=sign_in, daemon=True).start()
+
+    def lock_active_game():
+        nonlocal access_stopping
+        if access_stopping:
+            return
+        access_stopping = True
+        manager.cancel.set()
+        if control_panel is not None and control_panel.window.winfo_exists():
+            control_panel.window.withdraw()
+        def stop():
+            try:
+                controller.stop_demo()
+                speech.stop()
+                music.stop()
+                manager.stop()
+            finally:
+                messages.put(('access-stopped', None))
+        threading.Thread(target=stop, daemon=True).start()
+
+    def logout():
+        session.sign_out()
+        lock_active_game()
+        canvas.pack_forget()
+        scrollbar.pack_forget()
+        login.pack(fill='both', expand=True)
+        login.ready('ออกจากระบบแล้ว เกมและลิงก์ไลฟ์กำลังปิด')
+        status.set('ออกจากระบบแล้ว')
+
+    def update_account():
+        account = session.snapshot()
+        email = account['email'] or 'ยังไม่ได้เข้าสู่ระบบ'
+        if account_text.get() != email:
+            account_text.set(email)
+        state = account.get('status')
+        if account['allowed']:
+            if state == 'admin':
+                description = 'แอดมิน · พร้อมใช้งาน'
+            elif account.get('expiresAt'):
+                end = datetime.fromtimestamp(account['expiresAt'] / 1000).strftime('%d/%m/%Y %H:%M')
+                description = ('ทดลองฟรี' if state == 'trial' else 'สมาชิก') + ' · ใช้ได้ถึง ' + end
+            else:
+                description = 'พร้อมใช้งาน'
+        else:
+            description = {'trial_expired': 'หมดช่วงทดลองฟรีแล้ว', 'expired': 'สมาชิกหมดอายุแล้ว',
+                'suspended': 'สิทธิ์ถูกระงับ กรุณาติดต่อแอดมิน', 'pending': 'รอแอดมินเปิดสิทธิ์',
+                'signed_out': 'ยังไม่ได้เข้าสู่ระบบ'}.get(state, 'ตรวจสิทธิ์ไม่ได้ · กรุณาตรวจอินเทอร์เน็ต')
+        if member_text.get() != description:
+            member_text.set(description)
+
     # Scroll on small laptop displays instead of clipping the lower controls.
     canvas = tk.Canvas(window, bg=bg, highlightthickness=0)
     scrollbar = tk.Scrollbar(window, orient='vertical', command=canvas.yview)
@@ -276,15 +366,30 @@ def main():
     canvas.bind('<Configure>', lambda event: canvas.itemconfigure(content_id, width=event.width))
     window.bind('<MouseWheel>', lambda event: canvas.yview_scroll(-int(event.delta / 120), 'units'))
 
+    login = LoginPanel(window, submit_login)
+
     header = tk.Frame(content, bg=bg)
     header.pack(fill='x', padx=28, pady=(22, 14))
-    label(header, 'LIVE GAME DESK', 10, green).pack(anchor='w')
-    label(header, 'ทุกเกมไลฟ์ อยู่ที่เดียว', 26).pack(anchor='w', pady=(3, 2))
+    label(header, 'หมูเฮง  /  LIVE GAME DESK', 11, green).pack(anchor='w')
+    label(header, 'สตูดิโอไลฟ์ของคุณ', 28).pack(anchor='w', pady=(3, 2))
     label(header, 'เลือกเกม • เปิดหน้าควบคุม • คัดลอกลิงก์ขึ้นไลฟ์', 12, muted).pack(anchor='w')
     top_actions = tk.Frame(header, bg=bg)
-    top_actions.place(relx=1, rely=.2, anchor='ne')
+    top_actions.pack(anchor='w', pady=(12, 0))
     button(top_actions, 'เปิด TikFinity', launch_tikfinity).pack(side='left', padx=4)
     button(top_actions, 'วิธีใช้งาน', help_user).pack(side='left', padx=4)
+
+    account_panel = tk.Frame(content, bg=surface, padx=20, pady=14, highlightthickness=1, highlightbackground='#46694e')
+    account_panel.pack(fill='x', padx=29, pady=(0, 16))
+    account_labels = tk.Frame(account_panel, bg=surface)
+    account_labels.pack(side='left', fill='x', expand=True)
+    tk.Label(account_labels, textvariable=account_text, font=(font, 12, 'bold'), bg=surface, fg=text).pack(anchor='w')
+    tk.Label(account_labels, textvariable=member_text, font=(font, 11), bg=surface, fg=green).pack(anchor='w', pady=(4, 0))
+    logout_button = button(account_panel, 'ออกจากระบบ', logout)
+    logout_button.pack(side='right', padx=(8, 0))
+    button(account_panel, 'สมาชิก / ต่ออายุ', lambda: open_game_page(SITE + '/membership')).pack(side='right', padx=4)
+    check_member_button = button(account_panel, 'ตรวจสิทธิ์อีกครั้ง', check_access)
+    check_member_button.pack(side='right', padx=4)
+    label(content, '01  เลือกบรรยากาศให้ไลฟ์', 17, green).pack(anchor='w', padx=29, pady=(0, 8))
 
     performance = tk.Frame(content, bg=bg)
     performance.pack(fill='x', padx=28, pady=(0, 10))
@@ -292,7 +397,7 @@ def main():
     def apply_performance():
         manager.set_low_memory(low_memory.get())
         status.set('ปรับโหมดแล้ว คัดลอกลิงก์ไปวางใหม่และรีเฟรชหน้าจอไลฟ์เพื่อใช้โหมดนี้')
-    tk.Checkbutton(performance, text='โหมดประหยัดสำหรับคอม RAM 4 GB', variable=low_memory,
+    tk.Checkbutton(performance, text='โหมดประหยัด RAM สำหรับคอมเก่า', variable=low_memory,
                    command=apply_performance, bg=bg, fg=green, selectcolor=surface,
                    activebackground=bg, activeforeground=green, font=(font, 11)).pack(side='left')
     label(performance, 'ลดเอฟเฟกต์ • เกม 3D สูงสุด 30 FPS • ใช้หน้าจอไลฟ์เพียงจอเดียว', 10, muted).pack(side='left', padx=15)
@@ -300,20 +405,26 @@ def main():
     row = tk.Frame(content, bg=bg)
     row.pack(fill='x', padx=24)
     for index, game in enumerate(GAMES):
-        card = tk.Frame(row, bg=surface, padx=14, pady=10, highlightthickness=1, highlightbackground='#2b3c55')
+        card = tk.Frame(row, bg=surface, padx=14, pady=10, highlightthickness=1, highlightbackground='#395846')
         card.grid(row=index//3, column=index%3, sticky='nsew', padx=5, pady=5)
         row.columnconfigure(index%3, weight=1, uniform='card')
-        label(card, f'0{index+1}  /  INTERACTIVE LIVE', 9, green).pack(anchor='w')
+        label(card, ['ศรัทธาและคำอวยพร', 'ศรัทธาและคำอวยพร', 'ร้านอาหาร 3D', 'ยามเช้าและคำอวยพร', 'ดนตรีและงานเทศกาล'][index], 10, green).pack(anchor='w')
         label(card, game.title, 17).pack(anchor='w', pady=(10, 5))
-        label(card, game.description, 10, muted, wraplength=285, justify='left', height=2).pack(anchor='w')
+        label(card, game.description, 11, muted, wraplength=285, justify='left', height=2).pack(anchor='w')
         state = label(card, '● ปิดอยู่', 11, muted)
         state.pack(anchor='w', pady=(13, 8))
         start_button = button(card, 'เปิดเกม', lambda g=game: open_game(g), True)
         start_button.pack(fill='x')
         cards[game.key] = (state, start_button, card)
 
+    web_themes = tk.Frame(content, bg=bg)
+    web_themes.pack(fill='x', padx=29, pady=(10, 0))
+    label(web_themes, 'อีก 3 ธีมบนเว็บ: หมูกระทะ · สวนผัก · คริสต์มาส', 11, muted).pack(side='left')
+    button(web_themes, 'เลือกเกมบนเว็บ', lambda: open_game_page(SITE)).pack(side='right')
+
     panel = tk.Frame(content, bg=surface, padx=20, pady=15)
     panel.pack(fill='x', padx=29, pady=(17, 10))
+    label(panel, '02  ควบคุมเกมและเสียง', 17, green).pack(anchor='w', pady=(0, 8))
     active_title = label(panel, 'ยังไม่ได้เปิดเกม', 16)
     active_title.pack(anchor='w')
     tk.Label(panel, textvariable=gift, font=(font, 11), bg=surface, fg=muted).pack(anchor='w', pady=(3, 10))
@@ -329,8 +440,8 @@ def main():
 
     links = tk.Frame(content, bg=surface, padx=20, pady=14)
     links.pack(fill='x', padx=29)
-    label(links, 'การเชื่อมต่อเซิร์ฟเวอร์ / Tunnel', 15).pack(anchor='w')
-    entry = tk.Entry(links, textvariable=public, state='readonly', readonlybackground='#0d1828',
+    label(links, '03  เตรียมลิงก์ขึ้นไลฟ์', 17, green).pack(anchor='w')
+    entry = tk.Entry(links, textvariable=public, state='readonly', readonlybackground='#0d261e',
                      fg=green, font=(font, 11), relief='flat', bd=0)
     entry.pack(fill='x', ipady=10, pady=(8, 9))
     link_controls = tk.Frame(links, bg=surface)
@@ -348,7 +459,7 @@ def main():
     pages_base = tk.StringVar(value=manager.pages_base)
     pages_row = tk.Frame(links, bg=surface)
     pages_row.pack(fill='x')
-    tk.Entry(pages_row, textvariable=pages_base, bg='#0d1828', fg=green, font=(font, 11), relief='flat').pack(side='left', fill='x', expand=True, ipady=9)
+    tk.Entry(pages_row, textvariable=pages_base, bg='#0d261e', fg=green, font=(font, 11), relief='flat').pack(side='left', fill='x', expand=True, ipady=9)
     def save_pages():
         try:
             manager.set_pages_base(pages_base.get())
@@ -400,23 +511,26 @@ def main():
 
     def refresh():
         update_widget(help_button, text='ยกเลิกการทำงาน' if busy else 'คัดลอกข้อมูลช่วยเหลือ')
+        allowed = session.allowed() and not access_stopping
+        update_widget(check_member_button, state='disabled' if checking_access else 'normal')
+        update_widget(logout_button, state='disabled' if busy else 'normal')
         active = manager.active
         running = active is not None and manager.running()
         for game in GAMES:
             state, start_button, card = cards[game.key]
             chosen = running and active == game
             update_widget(state, text='● กำลังเปิดอยู่' if chosen else '● ปิดอยู่', fg=green if chosen else muted)
-            update_widget(card, highlightbackground=green if chosen else '#2b3c55')
-            update_widget(start_button, state='disabled' if busy else 'normal', text='เปิดหน้าควบคุม' if chosen else 'เปิดเกม')
+            update_widget(card, highlightbackground=green if chosen else '#395846')
+            update_widget(start_button, state='normal' if allowed and not busy else 'disabled', text='เปิดหน้าควบคุม' if chosen else 'เปิดเกม' if allowed else 'ต้องมีสิทธิ์ใช้งาน')
         update_widget(active_title, text=('กำลังใช้: ' + active.title) if running else 'ยังไม่ได้เปิดเกม')
         for item in (control_button, screen_button, stop_button, create_button):
-            update_widget(item, state='normal' if running and not busy else 'disabled')
+            update_widget(item, state='normal' if allowed and running and not busy else 'disabled')
         valid_link = bool(manager.public_url) and running and manager.processes.get('tunnel') and manager.processes['tunnel'].poll() is None
         for item in (pages_open_button, pages_copy_button):
-            update_widget(item, state='normal' if valid_link and manager.pages_base and not busy else 'disabled')
-        update_widget(import_gifts_button, state='normal' if running and not busy else 'disabled')
+            update_widget(item, state='normal' if allowed and valid_link and manager.pages_base and not busy else 'disabled')
+        update_widget(import_gifts_button, state='normal' if allowed and running and not busy else 'disabled')
         for item in (copy_button, view_button, stop_link_button):
-            update_widget(item, state='normal' if valid_link and not busy else 'disabled')
+            update_widget(item, state='normal' if allowed and valid_link and not busy else 'disabled')
         link_text = manager.public_url if valid_link else 'ยังไม่มีลิงก์ — เปิดเกมแล้วกด «สร้างลิงก์ไลฟ์»'
         if public.get() != link_text:
             public.set(link_text)
@@ -430,7 +544,24 @@ def main():
             if messages.empty():
                 break
             kind, content = messages.get_nowait()
-            if kind == 'message':
+            if kind == 'login-done':
+                login.ready()
+                login.pack_forget()
+                scrollbar.pack(side='right', fill='y')
+                canvas.pack(side='left', fill='both', expand=True)
+                update_account()
+                status.set('เลือกเกมได้เลย' if session.allowed() else 'ตรวจแพ็กเกจที่ปุ่มสมาชิก / ต่ออายุ')
+            elif kind == 'login-error':
+                login.ready(content)
+            elif kind == 'account':
+                update_account()
+            elif kind == 'account-error':
+                status.set(content)
+            elif kind == 'account-checked':
+                checking_access_done()
+            elif kind == 'access-stopped':
+                access_stopped()
+            elif kind == 'message':
                 status.set(content)
             elif kind == 'gift':
                 gift.set(content)
@@ -446,11 +577,31 @@ def main():
             elif kind == 'error':
                 busy = False
                 status.set(content)
+                # Start shutdown before a modal can pause the Tk polling loop.
+                if not session.allowed() and manager.active is not None:
+                    lock_active_game()
                 if content != 'ยกเลิกแล้ว':
                     dialog(messagebox.showerror, 'ยังทำรายการไม่สำเร็จ', content)
         if not closing:
+            update_account()
+            if not session.allowed() and manager.active is not None:
+                lock_active_game()
             refresh()
             window.after(750, poll)
+
+    def checking_access_done():
+        nonlocal checking_access
+        checking_access = False
+
+    def access_stopped():
+        nonlocal access_stopping
+        access_stopping = False
+        status.set('เกมและลิงก์ไลฟ์หยุดแล้ว · ตรวจสิทธิ์หรือต่ออายุเพื่อใช้งานต่อ')
+
+    def membership_timer():
+        if not closing:
+            check_access()
+            window.after(30000, membership_timer)
 
     def health_loop():
         import time
@@ -489,6 +640,11 @@ def main():
                 window.after(100, finish_close)
         window.after(100, finish_close)
 
+    canvas.pack_forget()
+    scrollbar.pack_forget()
+    login.pack(fill='both', expand=True)
+    login.email.focus_set()
+    window.after(30000, membership_timer)
     window.protocol('WM_DELETE_WINDOW', on_close)
     threading.Thread(target=health_loop, daemon=True).start()
     refresh()

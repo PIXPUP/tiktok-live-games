@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
-VERSION = '1.8.0'
+VERSION = '1.9.0'
 
 
 def physical_ram_gb():
@@ -116,8 +116,9 @@ class ProcessGroup:
 
 
 class Manager:
-    def __init__(self, root, data, notify=lambda message: None):
+    def __init__(self, root, data, notify=lambda message: None, authorize=None):
         self.root, self.data, self.notify = Path(root), Path(data), notify
+        self.authorize = authorize
         self.data.mkdir(parents=True, exist_ok=True)
         self.ram_gb = physical_ram_gb()
         self.low_memory = self.ram_gb is not None and self.ram_gb < 6
@@ -259,6 +260,8 @@ class Manager:
     def wait_ready(self, url, label, timeout=25):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
+            if self.authorize:
+                self.authorize()
             if self.cancel.is_set():
                 raise RuntimeError('ยกเลิกแล้ว')
             if self.processes[label].poll() is not None:
@@ -272,6 +275,8 @@ class Manager:
 
     def start(self, game):
         with self.lock:
+            if self.authorize:
+                self.authorize()
             if self.active == game and self.running():
                 return
             if self.active:
@@ -281,6 +286,8 @@ class Manager:
                     raise RuntimeError(f'มีโปรแกรมอื่นใช้ช่อง {port} อยู่ หากเปิดเกมด้วยวิธีเดิมไว้ ให้ปิดก่อน แล้วกดลองใหม่')
             self.cancel.clear()
             self.prepare(game)
+            if self.authorize:
+                self.authorize()
             directory = self.games_dir / game.key
             node = self.runtime('node')
             self.active = game
@@ -294,6 +301,8 @@ class Manager:
                     self.wait_ready(f'http://127.0.0.1:{game.port}/api/state', 'game')
                     self.spawn('bridge', [node, str(self.root / 'desktop' / 'bridge.mjs'), str(directory), str(game.port), str(game.bridge)], directory)
                     self.wait_ready(f'http://127.0.0.1:{game.bridge}/status', 'bridge')
+                if self.authorize:
+                    self.authorize()
                 self.notify('เกมพร้อมแล้ว เปิดเสียงจากหน้าควบคุมก่อนเริ่มไลฟ์')
             except Exception:
                 self.stop()
@@ -304,6 +313,8 @@ class Manager:
 
     def start_public(self, timeout=100):
         with self.lock:
+            if self.authorize:
+                self.authorize()
             if not self.running():
                 raise RuntimeError('เปิดเกมก่อนสร้างลิงก์ไลฟ์')
             if 'tunnel' in self.processes and self.processes['tunnel'].poll() is None and self.public_url:
@@ -328,6 +339,8 @@ class Manager:
                 candidate = None
                 announced = False
                 while time.monotonic() < deadline:
+                    if self.authorize:
+                        self.authorize()
                     if self.cancel.is_set():
                         raise RuntimeError('ยกเลิกแล้ว')
                     process = self.processes['tunnel']

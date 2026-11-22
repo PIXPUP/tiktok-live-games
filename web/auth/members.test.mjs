@@ -7,6 +7,24 @@ const admin={uid:'owner',email:'owner@example.invalid'},member={uid:'member',ema
 const identity=async token=>{if(token==='admin')return admin;if(token==='user')return member;throw Error('invalid');};
 const handler=createHandler({verifyIdentity:identity});
 const req=(path,token,method='GET',body,site=origin)=>new Request(origin+path,{method,headers:{Cookie:SESSION_COOKIE+'='+token,Origin:site,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+
+test('Desktop access requires a verified bearer, shares membership, bounds leases and never accepts cookie identity',async()=>{
+ const env=environment();
+ const desktop=token=>new Request(origin+'/api/desktop/access',{headers:{Authorization:'Bearer '+token}});
+ assert.equal((await handler(req('/api/desktop/access','admin'),env)).status,401);
+ assert.equal((await handler(desktop('forged'),env)).status,401);
+ let response=await handler(desktop('user'),env),access=await response.json();
+ assert.equal(response.status,200);assert.equal(access.active,false);assert.equal(access.leaseSeconds,0);assert.equal(access.email,member.email);
+ await changeAccess(env,admin,{uid:member.uid,action:'grant'});
+ access=await (await handler(desktop('user'),env)).json();assert.equal(access.active,true);assert(access.leaseSeconds<=90);
+ await env.MEMBERS_KV.put('access:member',JSON.stringify({enabled:true,expiresAt:Date.now()+2000}));
+ access=await (await handler(desktop('user'),env)).json();assert(access.leaseSeconds<=2);
+ await changeAccess(env,admin,{uid:member.uid,action:'suspend'});
+ access=await (await handler(desktop('user'),env)).json();assert.equal(access.active,false);assert.equal(access.leaseSeconds,0);
+ assert.equal((await handler(new Request(origin+'/api/desktop/access',{method:'POST',headers:{Authorization:'Bearer admin'}}),env)).status,405);
+ const unavailable=createHandler({verifyIdentity:identity,checkMembership:async()=>{throw Error('unavailable');}});
+ assert.equal((await unavailable(desktop('user'),env)).status,503);
+});
 test('Existing accounts keep their prior access; only configured UID is administrator',async()=>{
  const env=environment();await registerUser(env,member);assert.equal((await memberAccess(env,member)).status,'pending');assert.equal((await memberAccess(env,admin)).active,true);assert.equal(isAdmin(env,'owner2'),false);assert.equal(isAdmin(env,''),false);
  const page=await listUsers(env);assert.equal(page.users[0].email,member.email);assert.equal(page.users[0].active,false);

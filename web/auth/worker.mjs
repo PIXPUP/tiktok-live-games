@@ -15,6 +15,20 @@ export function createHandler({verifyIdentity=verifyFirebase,checkMembership=mem
   let sessionPromise;
   const user=()=>sessionPromise??=(async()=>{try{return await verifyIdentity(cookieValue(request,SESSION_COOKIE));}catch{return null;}})();
   const paid=async identity=>{try{return await checkMembership(env,identity);}catch{return {active:false,status:'unavailable'};}};
+  // Native client uses a Firebase bearer token, never the browser cookie or posted UID.
+  if(path==='/api/desktop/access'){
+   if(request.method!=='GET')return reply({error:'Method not allowed'},405);
+   const header=request.headers.get('Authorization')||'';
+   if(!/^Bearer [^\s]+$/.test(header)||header.length>8200)return reply({error:'Sign in required'},401);
+   let identity;try{identity=await verifyIdentity(header.slice(7));}catch{return reply({error:'Sign in required'},401);}
+   try{
+    await registerUser(env,identity);
+    const access=await checkMembership(env,identity),serverTime=Date.now();
+    if(access.status==='unavailable')return reply({error:'Member store unavailable'},503);
+    const remaining=Number.isFinite(access.expiresAt)?Math.max(0,(access.expiresAt-serverTime)/1000):90;
+    return reply({...access,uid:identity.uid,email:identity.email,serverTime,leaseSeconds:access.active?Math.min(90,remaining):0});
+   }catch{return reply({error:'Member store unavailable'},503);}
+  }
   if(path==='/api/access'){
    if(request.method!=='GET')return reply({error:'Method not allowed'},405);
    const identity=await user();if(!identity)return reply({error:'Sign in required'},401);

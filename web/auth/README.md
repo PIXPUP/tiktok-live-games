@@ -33,3 +33,7 @@ wrangler pages deploy dist/pages --project-name pixpup-live-games --branch codex
 Configure `OVERLAY_SIGNING_KEY` as a Cloudflare Pages secret (at least 32 characters), separately for production and preview. Do not commit it. Existing signing keys must be preserved on normal deployments. The Firebase Console needs Email/Password enabled and `pixpup-live-games.pages.dev` in Authentication authorized domains; initial Authentication activation is done in the Console, with no Billing upgrade required by this implementation.
 
 Firebase manages account credentials. The app does not email users from the developer's account; password resets are requested directly by the signed-in site user through Firebase's standard flow. No Firestore/database/analytics integration is used.
+
+## Desktop authentication (1.9.0)
+
+The native client signs in directly to Firebase REST and keeps its ID/refresh tokens in memory only. GET `/api/desktop/access` verifies a Firebase Bearer token (cookies and posted identity cannot authorize this route), registers the same user profile, and reads the existing manual/trial membership. The response contains server time and a lease of at most 90 seconds, capped at the remaining membership time. The app rechecks every 30 seconds and before starting games/Tunnels; an unavailable service never extends the previous lease. Native authorization is pinned to the production origin, independent of the editable Pages preview URL. This protects the normal current app flow, not old copies or altered public source.

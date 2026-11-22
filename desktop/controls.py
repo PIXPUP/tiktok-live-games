@@ -195,13 +195,13 @@ class ControlPanel:
         self.window.title('หน้าควบคุมเกม — TikTok LIVE Game Desk')
         self.window.geometry('820x750')
         self.window.minsize(760, 640)
-        self.window.configure(bg='#0b1320')
+        self.window.configure(bg='#0b1c18')
         # Independent control window remains available when the launcher is minimized.
         self.pinned = tk.BooleanVar(value=getattr(controller, 'pin_controls', True))
         self.window.attributes('-topmost', self.pinned.get())
         self.window.protocol('WM_DELETE_WINDOW', self.close)
         self.loop_id = None
-        bg, fg, muted = '#0b1320', '#f0f5fb', '#a9bdd3'
+        bg, fg, muted = '#0b1c18', '#fff4d6', '#b9cebf'
         font = 'Leelawadee UI'
         height = min(750, self.window.winfo_screenheight()-90)
         self.window.geometry(f'820x{height}')
@@ -223,7 +223,7 @@ class ControlPanel:
 
         def button(parent, title, command):
             result = tk.Button(parent, text=title, command=command, font=(font, 11),
-                               bg='#25364e', fg=fg, activebackground='#38536e', activeforeground=fg,
+                               bg='#284b3b', fg=fg, activebackground='#38536e', activeforeground=fg,
                                relief='flat', padx=12, pady=7)
             return result
 
@@ -231,7 +231,7 @@ class ControlPanel:
         text('ทำงานในโปรแกรมนี้ · ไม่ต้องเปิดหน้าควบคุมใน Chrome', 10, muted)
         self.pin_button = tk.Checkbutton(self.body, text='ปักหน้าควบคุมไว้ด้านบน', variable=self.pinned,
                                         command=self.apply_pin, font=(font, 11), bg=bg, fg=fg,
-                                        selectcolor='#25364e', activebackground=bg, activeforeground=fg)
+                                        selectcolor='#284b3b', activebackground=bg, activeforeground=fg)
         self.pin_button.pack(anchor='w', padx=22, pady=4)
         name_row = tk.Frame(self.body, bg=bg)
         name_row.pack(fill='x', padx=22, pady=8)
@@ -300,7 +300,7 @@ class ControlPanel:
         self.music_button = button(music_row, 'เปิดเพลงคลอ', request_music)
         self.music_button.pack(side='left')
         self.music_volume = tk.Scale(music_row, from_=0, to=70, orient='horizontal',
-                                    label='ความดังเพลง', bg=bg, fg=fg, troughcolor='#25364e',
+                                    label='ความดังเพลง', bg=bg, fg=fg, troughcolor='#284b3b',
                                     highlightthickness=0, length=280, font=(font, 10),
                                     command=lambda value: self.music.set_volume(float(value)/100) if self.music else None)
         self.music_volume.set((self.music.volume if self.music else .35)*100)
@@ -324,7 +324,7 @@ class ControlPanel:
             elif not self.loop.get() and not getattr(controller, 'read_sadhu', False):
                 self.actions.submit(speech.stop)
         tk.Checkbutton(voice_row, text='อ่านชื่อของขวัญ / เดโม', variable=self.enabled, command=enable,
-                       font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e', activebackground=bg,
+                       font=(font, 11), bg=bg, fg=fg, selectcolor='#284b3b', activebackground=bg,
                        activeforeground=fg).pack(side='left', padx=10)
 
         def preview():
@@ -340,7 +340,7 @@ class ControlPanel:
                 self.actions.submit(speech.stop)
         self.sadhu_button = tk.Checkbutton(self.body, text='อ่านชื่อเมื่อพิมพ์สาธุ · เกมลานบุญ', variable=self.sadhu_enabled,
                                           command=enable_sadhu, font=(font, 11), bg=bg, fg=fg,
-                                          selectcolor='#25364e', activebackground=bg, activeforeground=fg)
+                                          selectcolor='#284b3b', activebackground=bg, activeforeground=fg)
         self.sadhu_button.pack(anchor='w', padx=22, pady=4)
         def test_sadhu():
             speech.enabled = True
@@ -350,16 +350,16 @@ class ControlPanel:
         self.sadhu_test.pack(anchor='w', padx=22, pady=4)
         self.sadhu_notice = text('คนเดิมเว้น 30 วินาที · คิวสาธุสูงสุด 8 ชื่อ · ของขวัญจริงมาก่อน', 9, muted)
         self.volume = tk.Scale(self.body, from_=0, to=100, orient='horizontal',
-                               label='ความดังเสียงพูด', bg=bg, fg=fg, troughcolor='#25364e',
+                               label='ความดังเสียงพูด', bg=bg, fg=fg, troughcolor='#284b3b',
                                highlightthickness=0, font=(font, 10),
                                command=lambda value: setattr(speech, 'volume', float(value) / 100))
         self.volume.set(speech.volume * 100)
         self.volume.pack(fill='x', padx=22)
-        self.speech_state = text('กดทดลองเสียงเพื่อเริ่มฟัง', 10, '#70e0b3')
+        self.speech_state = text('กดทดลองเสียงเพื่อเริ่มฟัง', 10, '#ebca80')
         self.short_enabled = tk.BooleanVar(value=getattr(controller, 'short_names', False))
         self.short_button = tk.Checkbutton(self.body, text='อ่านชื่อแบบสั้น · เหมาะกับคอมเก่า', variable=self.short_enabled,
                                           command=lambda: setattr(controller, 'short_names', self.short_enabled.get()),
-                                          font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e', activebackground=bg, activeforeground=fg)
+                                          font=(font, 11), bg=bg, fg=fg, selectcolor='#284b3b', activebackground=bg, activeforeground=fg)
         self.short_button.pack(anchor='w', padx=22, pady=4)
         self.queue_state = text('คิวเสียงพร้อม', 9, muted)
         self.retry_voice = button(self.body, 'ลองอ่านชื่อที่ไม่สำเร็จ', lambda: self.actions.submit(speech.retry_last))
@@ -367,7 +367,7 @@ class ControlPanel:
         text('ชื่อเดโมอ่านเมื่อเสียงว่าง · ผู้ส่งจริงมาก่อน · ข้อความส่งไปบริการเสียงออนไลน์ · เสียงออกลำโพงคอม', 9, muted)
         text('ใน LIVE Studio ให้จับเสียงระบบ และปิดเสียงอวยพรจากหน้าเว็บเพื่อไม่ให้พูดซ้ำ', 9, muted)
         text('บทพูดระหว่างไลฟ์', 13)
-        self.script = tk.Text(self.body, height=4, font=(font, 11), wrap='word', bg='#162235', fg=fg, insertbackground=fg)
+        self.script = tk.Text(self.body, height=4, font=(font, 11), wrap='word', bg='#17382d', fg=fg, insertbackground=fg)
         self.script.pack(fill='both', expand=True, padx=22, pady=3)
         game = manager.active
         self.script.insert('1.0', default_script(game))
@@ -396,7 +396,7 @@ class ControlPanel:
             if self.loop.get():
                 loop_tick()
         tk.Checkbutton(ambient, text='พูดวน · เว้นอย่างน้อย 20 วินาที', variable=self.loop, command=toggle_loop,
-                       font=(font, 11), bg=bg, fg=fg, selectcolor='#25364e',
+                       font=(font, 11), bg=bg, fg=fg, selectcolor='#284b3b',
                        activebackground=bg, activeforeground=fg).pack(side='left', padx=12)
 
         self.notify = notify
